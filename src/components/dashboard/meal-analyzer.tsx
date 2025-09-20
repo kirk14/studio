@@ -4,18 +4,20 @@ import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, Loader2, Sparkles, Camera, Image as ImageIcon, XCircle, CameraOff } from 'lucide-react';
+import { Upload, Loader2, Sparkles, Camera, Image as ImageIcon, XCircle, CameraOff, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { estimateMealCalories } from '@/ai/flows/meal-image-calorie-estimation';
+import { estimateMealCaloriesFromText } from '@/ai/flows/meal-text-calorie-estimation';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '../ui/textarea';
 
 export function MealAnalyzer() {
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<any | null>(null);
-    const [inputMode, setInputMode] = useState<'upload' | 'camera'>('upload');
+    const [inputMode, setInputMode] = useState<'upload' | 'camera' | 'manual'>('upload');
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+    const [manualMealDescription, setManualMealDescription] = useState('');
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const { toast } = useToast();
@@ -59,12 +61,11 @@ export function MealAnalyzer() {
                 stream.getTracks().forEach(track => track.stop());
             }
         }
-      }, [inputMode, toast]);
+    }, [inputMode, toast]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            setSelectedFile(file);
             setResult(null);
 
             const reader = new FileReader();
@@ -76,7 +77,16 @@ export function MealAnalyzer() {
     };
     
     const handleAnalyze = async () => {
-        if (!preview) {
+        if (inputMode === 'manual') {
+            if (!manualMealDescription) {
+                 toast({
+                    variant: 'destructive',
+                    title: 'No meal description',
+                    description: 'Please describe your meal first.',
+                });
+                return;
+            }
+        } else if (!preview) {
             toast({
                 variant: 'destructive',
                 title: 'No image selected',
@@ -89,14 +99,19 @@ export function MealAnalyzer() {
         setResult(null);
 
         try {
-            const analysisResult = await estimateMealCalories({ mealImageDataUri: preview });
+            let analysisResult;
+            if (inputMode === 'manual') {
+                analysisResult = await estimateMealCaloriesFromText({ mealDescription: manualMealDescription });
+            } else {
+                analysisResult = await estimateMealCalories({ mealImageDataUri: preview! });
+            }
             setResult(analysisResult);
         } catch (error) {
             console.error(error);
             toast({
                 variant: 'destructive',
                 title: 'Analysis Failed',
-                description: 'Could not analyze the meal image. Please try again.',
+                description: 'Could not analyze the meal. Please try again.',
             });
         } finally {
             setIsLoading(false);
@@ -114,7 +129,6 @@ export function MealAnalyzer() {
                 context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
                 const dataUri = canvas.toDataURL('image/jpeg');
                 setPreview(dataUri);
-                setSelectedFile(null); // Clear file selection
                 setInputMode('upload'); // Switch back to show the preview
             }
         }
@@ -122,7 +136,6 @@ export function MealAnalyzer() {
 
     const clearPreview = () => {
         setPreview(null);
-        setSelectedFile(null);
         setResult(null);
     }
 
@@ -131,15 +144,18 @@ export function MealAnalyzer() {
         <Card>
             <CardHeader>
                 <CardTitle>AI Meal Analyzer</CardTitle>
-                <CardDescription>Upload a picture or use your camera to get an instant calorie and macro estimate.</CardDescription>
+                <CardDescription>Get an instant calorie and macro estimate from an image or text description.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="flex gap-2">
+                <div className="grid grid-cols-3 gap-2">
                     <Button variant={inputMode === 'upload' ? 'secondary' : 'outline'} onClick={() => setInputMode('upload')} className="w-full">
                         <Upload className="mr-2 h-4 w-4" /> Upload
                     </Button>
                     <Button variant={inputMode === 'camera' ? 'secondary' : 'outline'} onClick={() => setInputMode('camera')} className="w-full">
-                        <Camera className="mr-2 h-4 w-4" /> Use Camera
+                        <Camera className="mr-2 h-4 w-4" /> Camera
+                    </Button>
+                     <Button variant={inputMode === 'manual' ? 'secondary' : 'outline'} onClick={() => setInputMode('manual')} className="w-full">
+                        <FileText className="mr-2 h-4 w-4" /> Manual
                     </Button>
                 </div>
 
@@ -174,14 +190,25 @@ export function MealAnalyzer() {
                                 </AlertDescription>
                             </Alert>
                         )}
-                         <Button onClick={handleTakePicture} disabled={isLoading || !hasCameraPermission} className="w-full">
+                         <Button onClick={handleTakePicture} disabled={isLoading || hasCameraPermission === false} className="w-full">
                             <Camera className="mr-2 h-4 w-4" />
                             Take Picture
                         </Button>
                     </div>
                 )}
+
+                {inputMode === 'manual' && (
+                     <div className="space-y-4">
+                        <Textarea 
+                            placeholder="e.g., 2 slices of whole wheat toast with avocado and a fried egg"
+                            value={manualMealDescription}
+                            onChange={(e) => setManualMealDescription(e.target.value)}
+                            rows={4}
+                        />
+                    </div>
+                )}
                 
-                <Button onClick={handleAnalyze} disabled={isLoading || !preview} className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]">
+                <Button onClick={handleAnalyze} disabled={isLoading || (inputMode !== 'manual' && !preview) || (inputMode === 'manual' && !manualMealDescription) } className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]">
                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                     Analyze Meal
                 </Button>

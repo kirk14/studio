@@ -22,10 +22,14 @@ export function ProfileForm() {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 setFirebaseUser(user);
-                const userDocRef = doc(db, "users", user.uid);
-                const userDoc = await getDoc(userDocRef);
-                if (userDoc.exists()) {
-                    setUserProfile(userDoc.data() as AppUser);
+                try {
+                    const userDocRef = doc(db, "users", user.uid);
+                    const userDoc = await getDoc(userDocRef);
+                    if (userDoc.exists()) {
+                        setUserProfile(userDoc.data() as AppUser);
+                    }
+                } catch (error) {
+                    console.error("Error fetching user profile:", error);
                 }
             } else {
                 setFirebaseUser(null);
@@ -80,12 +84,25 @@ export function ProfileForm() {
         )
     }
 
-    if (!firebaseUser || !userProfile) {
+    if (!firebaseUser) {
         return (
             <Card className="max-w-4xl mx-auto">
                 <CardHeader>
                     <CardTitle>No User Found</CardTitle>
                     <CardDescription>Please log in to view your profile.</CardDescription>
+                </CardHeader>
+            </Card>
+        )
+    }
+    
+    // This can happen if the user is authenticated with Firebase Auth
+    // but their profile document doesn't exist in Firestore yet.
+    if (!userProfile) {
+        return (
+            <Card className="max-w-4xl mx-auto">
+                <CardHeader>
+                    <CardTitle>Welcome!</CardTitle>
+                    <CardDescription>Your profile is not yet complete. Please finish the sign-up process.</CardDescription>
                 </CardHeader>
             </Card>
         )
