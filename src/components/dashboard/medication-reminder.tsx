@@ -101,7 +101,7 @@ export function MedicationReminder() {
 
       // Webhook integration
       try {
-        await fetch('https://swapranit.app.n8n.cloud/webhook-test/medication-reminder', {
+        await fetch('https://swapranit.app.n8n.cloud/webhook-test/medication-data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -110,9 +110,9 @@ export function MedicationReminder() {
                 userId: user.uid,
                 medicineName: data.medicineName,
                 dosage: data.dosage,
-                time: data.time,
                 startDate: format(data.startDate, 'yyyy-MM-dd'),
                 endDate: format(data.endDate, 'yyyy-MM-dd'),
+                time: data.time,
             }),
         });
       } catch (webhookError) {
