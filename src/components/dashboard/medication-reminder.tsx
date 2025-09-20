@@ -96,22 +96,19 @@ export function MedicationReminder() {
 
       // Webhook integration
       try {
-        const webhookUrl = 'https://sattwik19.app.n8n.cloud/webhook-test/b5fcc160-8b46-4b1b-9feb-f38014e13d16';
-        const payload = {
+        const webhookUrl = new URL('https://sattwik19.app.n8n.cloud/webhook-test/b5fcc160-8b46-4b1b-9feb-f38014e13d16');
+        const params = new URLSearchParams({
             userId: user.uid,
             medicineName: data.medicineName,
             dosage: data.dosage,
             startDate: format(data.startDate, 'yyyy-MM-dd'),
             endDate: format(data.endDate, 'yyyy-MM-dd'),
             time: data.time,
-        };
+        });
+        webhookUrl.search = params.toString();
 
-        await fetch(webhookUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
+        await fetch(webhookUrl.toString(), {
+            method: 'GET',
         });
       } catch (webhookError) {
           console.error("Error sending webhook: ", webhookError);
