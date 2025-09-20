@@ -54,8 +54,8 @@ export type MedicationReminder = {
   id: string;
   medicineName: string;
   dosage: string;
-  startTime: string;
-  endTime: string;
-  date: Date;
+  time: string;
+  startDate: Date;
+  endDate: Date;
   taken: boolean;
 };

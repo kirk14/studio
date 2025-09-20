@@ -22,9 +22,9 @@ import { format } from 'date-fns';
 const reminderSchema = z.object({
   medicineName: z.string().min(1, 'Medicine name is required'),
   dosage: z.string().min(1, 'Dosage is required'),
-  date: z.date({ required_error: 'Please select a date.' }),
-  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:mm)'),
-  endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:mm)'),
+  time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:mm)'),
+  startDate: z.date({ required_error: 'Please select a start date.' }),
+  endDate: z.date({ required_error: 'Please select an end date.' }),
 });
 
 type ReminderFormValues = z.infer<typeof reminderSchema>;
@@ -56,10 +56,11 @@ export function MedicationReminder() {
         userReminders.push({ 
             id: doc.id, 
             ...data,
-            date: (data.date as any).toDate(),
+            startDate: (data.startDate as any).toDate(),
+            endDate: (data.endDate as any).toDate(),
         } as MedicationReminderType);
       });
-      setReminders(userReminders.sort((a, b) => a.date.getTime() - b.date.getTime()));
+      setReminders(userReminders.sort((a, b) => a.startDate.getTime() - b.startDate.getTime()));
       setIsLoading(false);
     }, (error) => {
       console.error("Error fetching reminders: ", error);
@@ -79,9 +80,9 @@ export function MedicationReminder() {
     defaultValues: {
       medicineName: '',
       dosage: '',
-      startTime: '',
-      endTime: '',
-      date: new Date(),
+      time: '',
+      startDate: new Date(),
+      endDate: new Date(),
     },
   });
 
@@ -108,9 +109,9 @@ export function MedicationReminder() {
             body: JSON.stringify({
                 medicineName: data.medicineName,
                 dosage: data.dosage,
-                date: format(data.date, 'yyyy-MM-dd'),
-                startTime: data.startTime,
-                endTime: data.endTime,
+                time: data.time,
+                startDate: format(data.startDate, 'yyyy-MM-dd'),
+                endDate: format(data.endDate, 'yyyy-MM-dd'),
             }),
         });
       } catch (webhookError) {
@@ -175,79 +176,93 @@ export function MedicationReminder() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="dosage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dosage</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., 500mg, 1 tablet" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                  control={form.control}
-                  name="date"
-                  render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                      <FormLabel>Date</FormLabel>
-                      <Popover>
-                      <PopoverTrigger asChild>
-                          <FormControl>
-                          <Button
-                              variant={"outline"}
-                              className={cn('pl-3 text-left font-normal', !field.value && 'text-muted-foreground')}
-                          >
-                              {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                          </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                      </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                  </FormItem>
-                  )}
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField
-                      control={form.control}
-                      name="startTime"
-                      render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Start Time</FormLabel>
-                          <FormControl>
-                          <div className="relative">
-                              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                              <Input type="time" {...field} className="pl-10" />
-                          </div>
-                          </FormControl>
-                          <FormMessage />
-                      </FormItem>
-                      )}
-                  />
-                  <FormField
-                      control={form.control}
-                      name="endTime"
-                      render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>End Time</FormLabel>
-                          <FormControl>
-                          <div className="relative">
-                              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                              <Input type="time" {...field} className="pl-10" />
-                          </div>
-                          </FormControl>
-                          <FormMessage />
-                      </FormItem>
-                      )}
-                  />
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="dosage"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Dosage</FormLabel>
+                        <FormControl>
+                        <Input placeholder="e.g., 500mg, 1 tablet" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="time"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Time</FormLabel>
+                        <FormControl>
+                        <div className="relative">
+                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input type="time" {...field} className="pl-10" />
+                        </div>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                        <FormLabel>Start Date</FormLabel>
+                        <Popover>
+                        <PopoverTrigger asChild>
+                            <FormControl>
+                            <Button
+                                variant={"outline"}
+                                className={cn('pl-3 text-left font-normal', !field.value && 'text-muted-foreground')}
+                            >
+                                {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                            </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                        </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="endDate"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                        <FormLabel>End Date</FormLabel>
+                        <Popover>
+                        <PopoverTrigger asChild>
+                            <FormControl>
+                            <Button
+                                variant={"outline"}
+                                className={cn('pl-3 text-left font-normal', !field.value && 'text-muted-foreground')}
+                            >
+                                {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                            </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                        </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+              </div>
+              
               <Button type="submit" className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]" disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
                 Add Reminder
@@ -277,8 +292,8 @@ export function MedicationReminder() {
                     </label>
                     <p className="text-sm">{reminder.dosage}</p>
                     <div className="flex items-center gap-4 text-xs">
-                        <span className='flex items-center gap-1'><CalendarIcon className="h-3 w-3"/>{format(reminder.date, 'PPP')}</span>
-                        <span className='flex items-center gap-1'><Clock className="h-3 w-3"/>{reminder.startTime} <ArrowRight className='h-3 w-3 mx-1' /> {reminder.endTime}</span>
+                        <span className='flex items-center gap-1'><CalendarIcon className="h-3 w-3"/>{format(reminder.startDate, 'PPP')} <ArrowRight className='h-3 w-3 mx-1' /> {format(reminder.endDate, 'PPP')}</span>
+                        <span className='flex items-center gap-1'><Clock className="h-3 w-3"/>{reminder.time}</span>
                     </div>
                   </div>
                 </div>
