@@ -1,3 +1,4 @@
+
 // src/lib/types.ts
 export type User = {
   userID: string;
@@ -54,8 +55,10 @@ export type MedicationReminder = {
   id: string;
   medicineName: string;
   dosage: string;
-  time: string;
-  startDate: Date;
-  endDate: Date;
+  startTime: string;
+  endTime: string;
+  date: Date;
   taken: boolean;
 };
+
+    
