@@ -1,20 +1,27 @@
 "use client";
 
-import { useState, useRef, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Loader2, Sparkles, XCircle, FileText, HeartPulse, Droplet, Activity, Wind } from 'lucide-react';
+import { Upload, Loader2, Sparkles, XCircle, FileText, HeartPulse, Droplet, Activity, Wind, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { analyzeMedicalReport } from '@/ai/flows/medical-report-analysis';
+import { analyzeMedicalReport, AnalyzeMedicalReportOutput } from '@/ai/flows/medical-report-analysis';
 import { UserContext } from '@/context/user-context';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '../ui/form';
+import { classifyHealthMetrics, ClassifyHealthMetricsOutput } from '@/ai/flows/classify-health-metrics';
+import { summarizeHealthRisks, SummarizeHealthRisksOutput } from '@/ai/flows/summarize-health-risks';
+import { Badge } from '../ui/badge';
+import { cn } from '@/lib/utils';
+import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
+import { Skeleton } from '../ui/skeleton';
 
 const reportSchema = z.object({
   bloodPressure: z.string().optional(),
@@ -27,12 +34,17 @@ type ReportFormValues = z.infer<typeof reportSchema>;
 
 export function MedicalReportUploader() {
     const [preview, setPreview] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [result, setResult] = useState<ReportFormValues | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [analysisResult, setAnalysisResult] = useState<AnalyzeMedicalReportOutput | null>(null);
+    const [classifications, setClassifications] = useState<ClassifyHealthMetricsOutput | null>(null);
+    const [riskSummary, setRiskSummary] = useState<SummarizeHealthRisksOutput | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [dataSaved, setDataSaved] = useState(false);
     const [inputMode, setInputMode] = useState<'upload' | 'manual'>('upload');
     const { toast } = useToast();
     const userContext = useContext(UserContext);
     const firebaseUser = userContext?.firebaseUser;
+    const router = useRouter();
     
     const form = useForm<ReportFormValues>({
         resolver: zodResolver(reportSchema),
@@ -47,9 +59,7 @@ export function MedicalReportUploader() {
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            setResult(null);
-            form.reset();
-
+            clearAll();
             const reader = new FileReader();
             reader.onloadend = () => {
                 setPreview(reader.result as string);
@@ -68,14 +78,26 @@ export function MedicalReportUploader() {
             return;
         }
 
-        setIsLoading(true);
-        setResult(null);
+        setIsAnalyzing(true);
+        setAnalysisResult(null);
+        setClassifications(null);
+        setRiskSummary(null);
 
         try {
-            const analysisResult = await analyzeMedicalReport({ reportImage: preview });
-            setResult(analysisResult);
-            form.reset(analysisResult); // Populate form with AI results
-            toast({ title: 'Analysis Complete', description: 'Review the extracted data below.' });
+            const extractedData = await analyzeMedicalReport({ reportImage: preview });
+            setAnalysisResult(extractedData);
+            form.reset(extractedData); 
+            toast({ title: 'Extraction Complete', description: 'AI analysis is now running...' });
+
+            const [classificationResult, summaryResult] = await Promise.all([
+                classifyHealthMetrics(extractedData),
+                summarizeHealthRisks(extractedData)
+            ]);
+            
+            setClassifications(classificationResult);
+            setRiskSummary(summaryResult);
+            toast({ title: 'Analysis Complete', description: 'Review the extracted data and AI summary below.' });
+
         } catch (error) {
             console.error(error);
             toast({
@@ -84,7 +106,7 @@ export function MedicalReportUploader() {
                 description: 'Could not analyze the report. Please try again or enter manually.',
             });
         } finally {
-            setIsLoading(false);
+            setIsAnalyzing(false);
         }
     };
     
@@ -93,39 +115,67 @@ export function MedicalReportUploader() {
             toast({ variant: 'destructive', title: 'Not signed in', description: 'You must be signed in to save data.' });
             return;
         }
-        setIsLoading(true);
+        setIsSaving(true);
         try {
             const userDocRef = doc(db, 'users', firebaseUser.uid);
-            await updateDoc(userDocRef, {
-                medicalData: data,
-            });
+            await updateDoc(userDocRef, { medicalData: data });
+            setDataSaved(true);
             toast({ title: 'Success!', description: 'Your medical data has been saved.' });
         } catch (error) {
             console.error('Error saving medical data: ', error);
             toast({ variant: 'destructive', title: 'Save failed', description: 'Could not save your medical data.' });
         } finally {
-            setIsLoading(false);
+            setIsSaving(false);
         }
     }
 
-    const clearPreview = () => {
+    const clearAll = () => {
         setPreview(null);
-        setResult(null);
+        setAnalysisResult(null);
+        setClassifications(null);
+        setRiskSummary(null);
+        setDataSaved(false);
         form.reset();
     }
+    
+    const getBadgeVariant = (classification: string | undefined): "default" | "secondary" | "destructive" | "outline" => {
+        switch (classification) {
+            case 'Normal': return 'default';
+            case 'High': case 'Very High': case 'Low': case 'Very Low': return 'destructive';
+            case 'Slightly High': case 'Slightly Low': return 'secondary';
+            default: return 'outline';
+        }
+    }
+
+    const MetricDisplay = ({ label, value, classification }: { label: string, value: string | undefined, classification: string | undefined }) => (
+        <div>
+            <div className="flex items-center justify-between mb-1">
+                <Label>{label}</Label>
+                {isAnalyzing && !classifications ? (
+                     <Skeleton className="h-5 w-16" />
+                ) : (
+                    classification && classification !== 'N/A' && (
+                        <Badge variant={getBadgeVariant(classification)}>{classification}</Badge>
+                    )
+                )}
+            </div>
+            <Input value={value ?? ''} readOnly />
+        </div>
+    );
+
 
     return (
         <Card className="max-w-4xl mx-auto">
             <CardHeader>
                 <CardTitle>Upload or Enter Medical Data</CardTitle>
-                <CardDescription>Use our AI to extract info from a report, or enter it manually.</CardDescription>
+                <CardDescription>Use our AI to extract info from a report, or enter it manually. This data will be used to generate a tailored diet plan.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="grid grid-cols-2 gap-2">
-                    <Button variant={inputMode === 'upload' ? 'secondary' : 'outline'} onClick={() => setInputMode('upload')}>
+                    <Button variant={inputMode === 'upload' ? 'secondary' : 'outline'} onClick={() => { setInputMode('upload'); clearAll(); }}>
                         <Upload className="mr-2 h-4 w-4" /> Upload Report
                     </Button>
-                     <Button variant={inputMode === 'manual' ? 'secondary' : 'outline'} onClick={() => setInputMode('manual')}>
+                     <Button variant={inputMode === 'manual' ? 'secondary' : 'outline'} onClick={() => { setInputMode('manual'); clearAll(); }}>
                         <FileText className="mr-2 h-4 w-4" /> Enter Manually
                     </Button>
                 </div>
@@ -138,24 +188,24 @@ export function MedicalReportUploader() {
                         </div>
                         {preview && (
                             <div className="relative p-2 border-2 border-dashed rounded-lg">
-                                <Button variant="ghost" size="icon" className="absolute top-2 right-2 z-10 h-6 w-6 rounded-full bg-background/50 hover:bg-background" onClick={clearPreview}>
+                                <Button variant="ghost" size="icon" className="absolute top-2 right-2 z-10 h-6 w-6 rounded-full bg-background/50 hover:bg-background" onClick={clearAll}>
                                     <XCircle className="h-5 w-5 text-destructive" />
                                  </Button>
                                 <img src={preview} alt="Report preview" className="w-full h-auto rounded-md" />
                             </div>
                         )}
-                        <Button onClick={handleAnalyze} disabled={isLoading || !preview} className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]">
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                        <Button onClick={handleAnalyze} disabled={isAnalyzing || !preview} className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]">
+                            {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                             Analyze with AI
                         </Button>
                     </div>
                 )}
                 
-                {(inputMode === 'manual' || result) && (
+                {(inputMode === 'manual' || analysisResult) && (
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSave)} className="space-y-4">
                         <CardTitle className='pt-4 border-t'>
-                            {inputMode === 'manual' ? 'Manual Data Entry' : 'Extracted Medical Data'}
+                            {inputMode === 'manual' ? 'Manual Data Entry' : 'Extracted & Analyzed Medical Data'}
                         </CardTitle>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                              <FormField
@@ -163,8 +213,11 @@ export function MedicalReportUploader() {
                                 name="bloodPressure"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Blood Pressure</FormLabel>
-                                        <FormControl><div className="relative"><HeartPulse className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="e.g., 120/80 mmHg" {...field} className="pl-10" /></div></FormControl>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <FormLabel>Blood Pressure</FormLabel>
+                                            {classifications?.bloodPressure && classifications.bloodPressure !== 'N/A' && <Badge variant={getBadgeVariant(classifications.bloodPressure)}>{classifications.bloodPressure}</Badge>}
+                                        </div>
+                                        <FormControl><div className="relative"><HeartPulse className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="e.g., 120/80 mmHg" {...field} className="pl-10" readOnly={inputMode !== 'manual'}/></div></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -173,9 +226,12 @@ export function MedicalReportUploader() {
                                 control={form.control}
                                 name="bloodSugar"
                                 render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Blood Sugar</FormLabel>
-                                        <FormControl><div className="relative"><Droplet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="e.g., 90 mg/dL" {...field} className="pl-10" /></div></FormControl>
+                                     <FormItem>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <FormLabel>Blood Sugar</FormLabel>
+                                            {classifications?.bloodSugar && classifications.bloodSugar !== 'N/A' && <Badge variant={getBadgeVariant(classifications.bloodSugar)}>{classifications.bloodSugar}</Badge>}
+                                        </div>
+                                        <FormControl><div className="relative"><Droplet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="e.g., 90 mg/dL" {...field} className="pl-10" readOnly={inputMode !== 'manual'}/></div></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -184,9 +240,12 @@ export function MedicalReportUploader() {
                                 control={form.control}
                                 name="cholesterol"
                                 render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Total Cholesterol</FormLabel>
-                                        <FormControl><div className="relative"><Activity className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="e.g., 180 mg/dL" {...field} className="pl-10" /></div></FormControl>
+                                     <FormItem>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <FormLabel>Total Cholesterol</FormLabel>
+                                            {classifications?.cholesterol && classifications.cholesterol !== 'N/A' && <Badge variant={getBadgeVariant(classifications.cholesterol)}>{classifications.cholesterol}</Badge>}
+                                        </div>
+                                        <FormControl><div className="relative"><Activity className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="e.g., 180 mg/dL" {...field} className="pl-10" readOnly={inputMode !== 'manual'}/></div></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -196,16 +255,45 @@ export function MedicalReportUploader() {
                                 name="spO2"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>SpO2 (Oxygen Saturation)</FormLabel>
-                                        <FormControl><div className="relative"><Wind className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="e.g., 98%" {...field} className="pl-10" /></div></FormControl>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <FormLabel>SpO2 (Oxygen Saturation)</FormLabel>
+                                            {classifications?.spO2 && classifications.spO2 !== 'N/A' && <Badge variant={getBadgeVariant(classifications.spO2)}>{classifications.spO2}</Badge>}
+                                        </div>
+                                        <FormControl><div className="relative"><Wind className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="e.g., 98%" {...field} className="pl-10" readOnly={inputMode !== 'manual'}/></div></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
                         </div>
-                         <Button type="submit" disabled={isLoading} className="w-full">
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Medical Data'}
+
+                        {(isAnalyzing || riskSummary) && (
+                            <div className="space-y-2 pt-4">
+                                <h3 className="text-lg font-semibold">AI Health Risk Analysis</h3>
+                                {isAnalyzing && !riskSummary ? (
+                                    <div className="space-y-2 p-4 border rounded-lg">
+                                        <Skeleton className="h-4 w-1/3" />
+                                        <Skeleton className="h-4 w-full" />
+                                        <Skeleton className="h-4 w-3/4" />
+                                    </div>
+                                ) : riskSummary ? (
+                                    <Alert>
+                                        <AlertTriangle className="h-4 w-4" />
+                                        <AlertTitle>Analysis Summary</AlertTitle>
+                                        <AlertDescription>{riskSummary.summary}</AlertDescription>
+                                    </Alert>
+                                ) : null}
+                            </div>
+                        )}
+
+                         <Button type="submit" disabled={isSaving || dataSaved} className="w-full">
+                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Medical Data'}
                         </Button>
+
+                        {dataSaved && (
+                             <Button onClick={() => router.push('/dashboard')} className="w-full" variant="secondary">
+                                <RefreshCw className="mr-2 h-4 w-4" /> Generate Updated Diet Plan
+                            </Button>
+                        )}
                     </form>
                   </Form>
                 )}
