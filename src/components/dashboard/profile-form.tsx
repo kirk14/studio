@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -9,18 +9,58 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "../ui/button";
 import { UserContext } from "@/context/user-context";
+import { Badge } from "../ui/badge";
+import { cn } from "@/lib/utils";
+import { classifyHealthMetrics, ClassifyHealthMetricsOutput } from "@/ai/flows/classify-health-metrics";
 
 export function ProfileForm() {
     const userContext = useContext(UserContext);
+    const [classifications, setClassifications] = useState<ClassifyHealthMetricsOutput | null>(null);
+    const [isClassifying, setIsClassifying] = useState(false);
 
     const firebaseUser = userContext?.firebaseUser;
     const userProfile = userContext?.userProfile;
     const isLoading = userContext?.isLoading;
 
+    useEffect(() => {
+        if (userProfile?.medicalData) {
+            const runClassification = async () => {
+                setIsClassifying(true);
+                try {
+                    const result = await classifyHealthMetrics(userProfile.medicalData!);
+                    setClassifications(result);
+                } catch (error) {
+                    console.error("Failed to classify health metrics:", error);
+                    setClassifications(null);
+                } finally {
+                    setIsClassifying(false);
+                }
+            };
+            runClassification();
+        }
+    }, [userProfile?.medicalData]);
+
     const getInitials = (name: string | null | undefined) => {
         if (!name) return 'U';
         return name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase();
-      };
+    };
+
+    const getBadgeVariant = (classification: string | undefined): "default" | "secondary" | "destructive" | "outline" => {
+        switch (classification) {
+            case 'Normal':
+                return 'default';
+            case 'High':
+            case 'Very High':
+            case 'Low':
+            case 'Very Low':
+                return 'destructive';
+            case 'Slightly High':
+            case 'Slightly Low':
+                return 'secondary';
+            default:
+                return 'outline';
+        }
+    }
     
     if (isLoading) {
         return (
@@ -84,6 +124,22 @@ export function ProfileForm() {
         )
     }
 
+    const MetricDisplay = ({ label, value, classification }: { label: string, value: string | undefined, classification: string | undefined }) => (
+        <div>
+            <div className="flex items-center justify-between mb-1">
+                <Label htmlFor={label.toLowerCase()}>{label}</Label>
+                {isClassifying ? (
+                     <Skeleton className="h-5 w-16" />
+                ) : (
+                    classification && classification !== 'N/A' && (
+                        <Badge variant={getBadgeVariant(classification)}>{classification}</Badge>
+                    )
+                )}
+            </div>
+            <Input id={label.toLowerCase()} value={value ?? 'N/A'} readOnly />
+        </div>
+    );
+
     return (
         <Card className="max-w-4xl mx-auto">
              <CardHeader>
@@ -126,26 +182,30 @@ export function ProfileForm() {
                     </div>
                 </div>
 
-                {userProfile.medicalData && (
+                {(userProfile.medicalData || isClassifying) && (
                     <>
                         <h3 className="text-xl font-semibold border-t pt-6">Medical Data</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                             <div>
-                                <Label htmlFor="bloodPressure">Blood Pressure</Label>
-                                <Input id="bloodPressure" value={userProfile.medicalData.bloodPressure ?? 'N/A'} readOnly />
-                            </div>
-                             <div>
-                                <Label htmlFor="bloodSugar">Blood Sugar</Label>
-                                <Input id="bloodSugar" value={userProfile.medicalData.bloodSugar ?? 'N/A'} readOnly />
-                            </div>
-                             <div>
-                                <Label htmlFor="cholesterol">Cholesterol</Label>
-                                <Input id="cholesterol" value={userProfile.medicalData.cholesterol ?? 'N/A'} readOnly />
-                            </div>
-                             <div>
-                                <Label htmlFor="spO2">SpO2</Label>
-                                <Input id="spO2" value={userProfile.medicalData.spO2 ?? 'N/A'} readOnly />
-                            </div>
+                            <MetricDisplay 
+                                label="Blood Pressure" 
+                                value={userProfile.medicalData?.bloodPressure} 
+                                classification={classifications?.bloodPressure}
+                            />
+                            <MetricDisplay 
+                                label="Blood Sugar" 
+                                value={userProfile.medicalData?.bloodSugar} 
+                                classification={classifications?.bloodSugar}
+                            />
+                            <MetricDisplay 
+                                label="Cholesterol" 
+                                value={userProfile.medicalData?.cholesterol} 
+                                classification={classifications?.cholesterol}
+                            />
+                            <MetricDisplay 
+                                label="SpO2" 
+                                value={userProfile.medicalData?.spO2} 
+                                classification={classifications?.spO2}
+                            />
                         </div>
                     </>
                 )}
