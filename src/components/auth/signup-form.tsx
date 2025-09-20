@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -18,8 +19,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
 import { signupSchema, type SignupFormValues } from "@/lib/schemas";
 import { auth, db } from '@/lib/firebase';
-import { createUserWithEmailAndPassword, onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -43,12 +44,13 @@ export function SignupForm() {
     const [currentStep, setCurrentStep] = useState(0);
     const [bmi, setBmi] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
 
     const form = useForm<SignupFormValues>({
         resolver: zodResolver(signupSchema),
         defaultValues: {
-            name: '', email: '', password: '',
+            name: '', email: '', password: '', phone: '',
             height: 0, weight: 0,
             medicalCondition: '', restrictions: '', cuisine: ''
         },
@@ -139,6 +141,44 @@ export function SignupForm() {
             setIsLoading(false);
         }
     }
+
+    const handleGoogleSignIn = async () => {
+        setIsGoogleLoading(true);
+        const provider = new GoogleAuthProvider();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            const userDocRef = doc(db, "users", user.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (userDoc.exists()) {
+                toast({
+                    title: "Logged In",
+                    description: "You have successfully logged in with Google.",
+                });
+                router.push("/dashboard");
+            } else {
+                // This is a new user, so we have a Firebase Auth user, but no Firestore doc.
+                // We let the form continue from here. The onAuthStateChanged will set the firebaseUser.
+                // The form will be pre-filled with name and email.
+                // The user needs to complete the multi-step form.
+                toast({
+                    title: "Complete Your Profile",
+                    description: "Welcome! Please complete your registration to continue.",
+                });
+                // The onAuthStateChanged listener will have set the firebaseUser and pre-filled the form
+            }
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Google Sign-In Failed",
+                description: error.message || "Could not sign in with Google. Please try again.",
+            });
+        } finally {
+            setIsGoogleLoading(false);
+        }
+    }
     
     return (
         <Card className="border-0 shadow-none">
@@ -161,7 +201,9 @@ export function SignupForm() {
                                 {!firebaseUser && (
                                 <>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <Button variant="outline" className="w-full" disabled={true}><GoogleIcon className="mr-2 h-5 w-5"/> Google</Button>
+                                        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                                            {isGoogleLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5"/>} Google
+                                        </Button>
                                         <Button variant="outline" className="w-full" disabled={true}><Apple className="mr-2 h-5 w-5"/> Apple</Button>
                                     </div>
                                     <div className="relative">
@@ -368,3 +410,5 @@ export function SignupForm() {
         </Card>
     );
 }
+
+    
