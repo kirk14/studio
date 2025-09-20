@@ -17,7 +17,7 @@ import { analyzeMedicalReport, AnalyzeMedicalReportOutput } from '@/ai/flows/med
 import { UserContext } from '@/context/user-context';
 import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Form, FormControl, FormField, FormLabel, FormMessage } from '../ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { classifyHealthMetrics, ClassifyHealthMetricsOutput } from '@/ai/flows/classify-health-metrics';
 import { summarizeHealthRisks, SummarizeHealthRisksOutput } from '@/ai/flows/summarize-health-risks';
 import { Badge } from '../ui/badge';
