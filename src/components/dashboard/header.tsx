@@ -27,22 +27,18 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Logo } from "@/components/logo"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useEffect, useState } from "react";
-import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+import { useContext } from "react";
+import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { UserContext } from "@/context/user-context";
 
 export function Header() {
-  const [user, setUser] = useState<User | null>(null);
+  const userContext = useContext(UserContext);
+  const user = userContext?.firebaseUser;
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
 
   const handleLogout = async () => {
     try {

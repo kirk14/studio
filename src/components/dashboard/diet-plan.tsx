@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RecipeCard } from "./recipe-card";
-import type { Meal, User as AppUser } from "@/lib/types";
 import { ScrollArea } from "../ui/scroll-area";
 import { generatePersonalizedDietPlan, PersonalizedDietPlanOutput } from "@/ai/flows/personalized-diet-plan-generation";
-import { onAuthStateChanged, type User as FirebaseAuthUser } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { Loader2, ServerCrash } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "../ui/alert";
+import { UserContext } from "@/context/user-context";
 
 interface DietPlanProps {
   dietPlan: PersonalizedDietPlanOutput | null;
@@ -18,24 +17,14 @@ interface DietPlanProps {
 }
 
 export function DietPlan({ dietPlan, onInitialPlanGenerated }: DietPlanProps) {
-    const [firebaseUser, setFirebaseUser] = useState<FirebaseAuthUser | null>(null);
+    const userContext = useContext(UserContext);
+    const firebaseUser = userContext?.firebaseUser;
+    const userProfile = userContext?.userProfile;
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                setFirebaseUser(user);
-            } else {
-                setFirebaseUser(null);
-                setIsLoading(false);
-            }
-        });
-        return () => unsubscribe();
-    }, []);
-
-    useEffect(() => {
-        if (!firebaseUser || dietPlan) {
+        if (!firebaseUser || !userProfile || dietPlan) {
           setIsLoading(false);
           return;
         };
@@ -44,42 +33,33 @@ export function DietPlan({ dietPlan, onInitialPlanGenerated }: DietPlanProps) {
             setIsLoading(true);
             setError(null);
             try {
-                const userDocRef = doc(db, "users", firebaseUser.uid);
-                const userDoc = await getDoc(userDocRef);
-
-                if (userDoc.exists()) {
-                    const userData = userDoc.data() as AppUser;
-                    
-                    const plan = await generatePersonalizedDietPlan({
-                        userID: firebaseUser.uid,
-                        name: userData.name,
-                        role: userData.role,
-                        personalInfo: {
-                            height: userData.personalInfo.height,
-                            weight: userData.personalInfo.weight,
-                            bmi: userData.personalInfo.bmi,
-                        },
-                        medicalCondition: userData.medicalCondition || "None",
-                        lifestyleHabits: {
-                            activityLevel: userData.lifestyleHabits.activityLevel,
-                            sleepPattern: userData.lifestyleHabits.sleepPattern || "Not specified",
-                            workShift: userData.lifestyleHabits.workShift || "Not specified",
-                        },
-                        dietaryPreferences: {
-                            vegOrNonVeg: userData.dietaryPreferences.vegOrNonVeg,
-                            cuisine: userData.dietaryPreferences.cuisine,
-                            restrictions: userData.dietaryPreferences.restrictions || "None",
-                        },
-                        healthGoals: {
-                            goalType: userData.healthGoals.goalType,
-                            targetWeight: userData.healthGoals.targetWeight,
-                            targetDate: userData.healthGoals.targetDate,
-                        },
-                    });
-                    onInitialPlanGenerated(plan);
-                } else {
-                    setError("User profile not found. Please complete your profile.");
-                }
+                const plan = await generatePersonalizedDietPlan({
+                    userID: firebaseUser.uid,
+                    name: userProfile.name,
+                    role: userProfile.role,
+                    personalInfo: {
+                        height: userProfile.personalInfo.height,
+                        weight: userProfile.personalInfo.weight,
+                        bmi: userProfile.personalInfo.bmi,
+                    },
+                    medicalCondition: userProfile.medicalCondition || "None",
+                    lifestyleHabits: {
+                        activityLevel: userProfile.lifestyleHabits.activityLevel,
+                        sleepPattern: userProfile.lifestyleHabits.sleepPattern || "Not specified",
+                        workShift: userProfile.lifestyleHabits.workShift || "Not specified",
+                    },
+                    dietaryPreferences: {
+                        vegOrNonVeg: userProfile.dietaryPreferences.vegOrNonVeg,
+                        cuisine: userProfile.dietaryPreferences.cuisine,
+                        restrictions: userProfile.dietaryPreferences.restrictions || "None",
+                    },
+                    healthGoals: {
+                        goalType: userProfile.healthGoals.goalType,
+                        targetWeight: userProfile.healthGoals.targetWeight,
+                        targetDate: userProfile.healthGoals.targetDate,
+                    },
+                });
+                onInitialPlanGenerated(plan);
             } catch (err) {
                 console.error("Error generating diet plan:", err);
                 setError("Failed to generate a diet plan. Please try again later.");
@@ -89,7 +69,7 @@ export function DietPlan({ dietPlan, onInitialPlanGenerated }: DietPlanProps) {
         };
 
         fetchAndGeneratePlan();
-    }, [firebaseUser, dietPlan, onInitialPlanGenerated]);
+    }, [firebaseUser, userProfile, dietPlan, onInitialPlanGenerated]);
 
     const renderContent = () => {
         if (isLoading) {

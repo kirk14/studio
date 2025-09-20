@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useContext } from "react";
 import { ProgressStats } from "@/components/dashboard/progress-stats";
 import { ActivityChart } from "@/components/dashboard/activity-chart";
 import { DietPlan } from "@/components/dashboard/diet-plan";
@@ -9,14 +9,18 @@ import { MealAnalyzer } from "@/components/dashboard/meal-analyzer";
 import { HydrationMeter } from "@/components/dashboard/hydration-meter";
 import type { ConsumedMacros, Meal } from "@/lib/types";
 import { adjustDietPlan } from "@/ai/flows/dynamic-diet-adjustment";
-import { onAuthStateChanged, type User as FirebaseAuthUser } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import type { PersonalizedDietPlanOutput } from "@/ai/flows/personalized-diet-plan-generation";
+import { UserContext } from "@/context/user-context";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseAuthUser | null>(null);
   const { toast } = useToast();
+  const userContext = useContext(UserContext);
+  
+  const firebaseUser = userContext?.firebaseUser;
+  const userProfile = userContext?.userProfile;
+  const isLoadingUser = userContext?.isLoading;
 
   const [consumedMacros, setConsumedMacros] = useState<ConsumedMacros>({
     calories: 0,
@@ -35,13 +39,6 @@ export default function DashboardPage() {
   const [originalDietPlan, setOriginalDietPlan] = useState<PersonalizedDietPlanOutput | null>(null);
   const [adjustedDietPlan, setAdjustedDietPlan] = useState<PersonalizedDietPlanOutput | null>(null);
   const [consumedMeals, setConsumedMeals] = useState<Meal[]>([]);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setFirebaseUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
 
   const handleMealAnalyzed = useCallback(async (mealData: { name: string; calories: number; protein: number; carbs: number; fats: number; }) => {
     const newConsumedMeal: Meal = {
@@ -120,11 +117,17 @@ export default function DashboardPage() {
     });
   };
 
+  const welcomeMessage = isLoadingUser ? (
+    <Skeleton className="h-8 w-64" />
+  ) : userProfile ? (
+    `Welcome Back, ${userProfile.name.split(' ')[0]}!`
+  ): "Welcome Back!";
+
   return (
     <div className="grid gap-4 md:gap-8 lg:grid-cols-5">
         <div className="lg:col-span-5">
             <h1 className="text-3xl font-bold tracking-tight font-headline">
-                Welcome Back, User!
+                {welcomeMessage}
             </h1>
             <p className="text-muted-foreground">
                 Here's a snapshot of your health and progress.

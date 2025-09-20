@@ -1,45 +1,21 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { onAuthStateChanged, type User as FirebaseAuthUser } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import { type User as AppUser } from "@/lib/types";
+import { useContext } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "../ui/button";
+import { UserContext } from "@/context/user-context";
 
 export function ProfileForm() {
-    const [firebaseUser, setFirebaseUser] = useState<FirebaseAuthUser | null>(null);
-    const [userProfile, setUserProfile] = useState<AppUser | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const userContext = useContext(UserContext);
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                setFirebaseUser(user);
-                try {
-                    const userDocRef = doc(db, "users", user.uid);
-                    const userDoc = await getDoc(userDocRef);
-                    if (userDoc.exists()) {
-                        setUserProfile(userDoc.data() as AppUser);
-                    }
-                } catch (error) {
-                    console.error("Error fetching user profile:", error);
-                }
-            } else {
-                setFirebaseUser(null);
-                setUserProfile(null);
-            }
-            setIsLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, []);
+    const firebaseUser = userContext?.firebaseUser;
+    const userProfile = userContext?.userProfile;
+    const isLoading = userContext?.isLoading;
 
     const getInitials = (name: string | null | undefined) => {
         if (!name) return 'U';

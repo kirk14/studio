@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -14,12 +14,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { auth, db } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, onSnapshot, doc, updateDoc, query } from 'firebase/firestore';
 import type { MedicationReminder as MedicationReminderType } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import type { User } from 'firebase/auth';
+import { UserContext } from '@/context/user-context';
 
 const reminderSchema = z.object({
   medicineName: z.string().min(1, 'Medicine name is required'),
@@ -36,14 +36,8 @@ export function MedicationReminder() {
   const [reminders, setReminders] = useState<MedicationReminderType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [user, setUser] = useState<User | null>(auth.currentUser);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-        setUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
+  const userContext = useContext(UserContext);
+  const user = userContext?.firebaseUser;
 
   useEffect(() => {
     if (!user) return;
@@ -313,5 +307,3 @@ export function MedicationReminder() {
     </div>
   );
 }
-
-    
