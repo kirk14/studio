@@ -1,4 +1,3 @@
-
 // src/lib/types.ts
 export type User = {
   userID: string;
@@ -12,6 +11,12 @@ export type User = {
     bmi: number;
   };
   medicalCondition?: string;
+  medicalData?: {
+    bloodPressure?: string;
+    bloodSugar?: string;
+    cholesterol?: string;
+    spO2?: string;
+  };
   lifestyleHabits: {
     activityLevel: 'sedentary' | 'lightly active' | 'moderately active' | 'very active';
     sleepPattern?: string; // Not in form, but in schema

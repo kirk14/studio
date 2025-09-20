@@ -1,6 +1,6 @@
 
 import Link from "next/link";
-import { Bell, Home, Users, Dumbbell, BookCopy, Pill, User as UserIcon } from "lucide-react";
+import { Bell, Home, Users, Dumbbell, BookCopy, Pill, User as UserIcon, HeartPulse } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,13 @@ export function MainNav() {
           >
             <Pill className="h-4 w-4" />
             Medication
+          </Link>
+           <Link
+            href="/dashboard/reports"
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+          >
+            <HeartPulse className="h-4 w-4" />
+            Medical Reports
           </Link>
           <Link
             href="#"

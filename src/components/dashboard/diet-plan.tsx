@@ -42,6 +42,7 @@ export function DietPlan({ dietPlan, onInitialPlanGenerated }: DietPlanProps) {
                         bmi: userProfile.personalInfo.bmi,
                     },
                     medicalCondition: userProfile.medicalCondition || "None",
+                    medicalData: userProfile.medicalData,
                     lifestyleHabits: {
                         activityLevel: userProfile.lifestyleHabits.activityLevel,
                         sleepPattern: userProfile.lifestyleHabits.sleepPattern || "Not specified",

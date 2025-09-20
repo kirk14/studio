@@ -12,6 +12,7 @@ import {
   Pill,
   User as UserIcon,
   LogOut,
+  HeartPulse,
 } from "lucide-react"
 import { useRouter } from "next/navigation";
 
@@ -103,6 +104,13 @@ export function Header() {
             >
               <Pill className="h-5 w-5" />
               Medication
+            </Link>
+             <Link
+              href="/dashboard/reports"
+              className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+            >
+              <HeartPulse className="h-5 w-5" />
+              Medical Reports
             </Link>
             <Link
               href="#"

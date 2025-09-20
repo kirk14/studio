@@ -24,6 +24,12 @@ const PersonalizedDietPlanInputSchema = z.object({
     bmi: z.number().describe('The Body Mass Index of the user.'),
   }).describe('The personal information of the user including height, weight and BMI.'),
   medicalCondition: z.string().describe('Any medical conditions the user has.'),
+  medicalData: z.object({
+    bloodPressure: z.string().optional().describe("The user's blood pressure, e.g., '120/80 mmHg'."),
+    bloodSugar: z.string().optional().describe("The user's blood sugar level, e.g., '90 mg/dL'."),
+    cholesterol: z.string().optional().describe("The user's total cholesterol level, e.g., '180 mg/dL'."),
+    spO2: z.string().optional().describe("The user's blood oxygen saturation level, e.g., '98%'."),
+  }).optional().describe("The user's specific medical metrics."),
   lifestyleHabits: z.object({
     activityLevel: z.string().describe('The activity level of the user (e.g., sedentary, lightly active, moderately active, very active).'),
     sleepPattern: z.string().describe('The sleep pattern of the user.'),
@@ -69,13 +75,20 @@ const personalizedDietPlanPrompt = ai.definePrompt({
   name: 'personalizedDietPlanPrompt',
   input: {schema: PersonalizedDietPlanInputSchema},
   output: {schema: PersonalizedDietPlanOutputSchema},
-  prompt: `You are an expert nutritionist. Generate a personalized daily diet plan for the user based on their profile, dietary preferences, and health goals.  The diet plan should align with the user's preferences and restrictions.
+  prompt: `You are an expert nutritionist. Generate a personalized daily diet plan for the user based on their profile, dietary preferences, and health goals. The diet plan should align with the user's preferences and restrictions. Critically, you MUST take the user's medical data into account. For example, if they have high blood sugar, recommend low-glycemic foods. If they have high blood pressure, suggest a low-sodium diet.
 
 User ID: {{{userID}}}
 Name: {{{name}}}
 Role: {{{role}}}
 Personal Info: Height- {{{personalInfo.height}}}cm, Weight- {{{personalInfo.weight}}}kg, BMI- {{{personalInfo.bmi}}}
 Medical Condition: {{{medicalCondition}}}
+{{#if medicalData}}
+Medical Metrics:
+- Blood Pressure: {{{medicalData.bloodPressure}}}
+- Blood Sugar: {{{medicalData.bloodSugar}}}
+- Cholesterol: {{{medicalData.cholesterol}}}
+- SpO2: {{{medicalData.spO2}}}
+{{/if}}
 Lifestyle Habits: Activity Level- {{{lifestyleHabits.activityLevel}}}, Sleep Pattern- {{{lifestyleHabits.sleepPattern}}}, Work Shift- {{{lifestyleHabits.workShift}}}
 Dietary Preferences: Veg/Non-Veg- {{{dietaryPreferences.vegOrNonVeg}}}, Cuisine- {{{dietaryPreferences.cuisine}}}, Restrictions- {{{dietaryPreferences.restrictions}}}
 Health Goals: Goal Type- {{{healthGoals.goalType}}}, Target Weight- {{{healthGoals.targetWeight}}}kg, Target Date- {{{healthGoals.targetDate}}}

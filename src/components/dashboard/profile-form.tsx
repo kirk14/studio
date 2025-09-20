@@ -125,6 +125,32 @@ export function ProfileForm() {
                         <Input id="targetWeight" value={`${userProfile.healthGoals?.targetWeight ?? 'N/A'} kg`} readOnly />
                     </div>
                 </div>
+
+                {userProfile.medicalData && (
+                    <>
+                        <h3 className="text-xl font-semibold border-t pt-6">Medical Data</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div>
+                                <Label htmlFor="bloodPressure">Blood Pressure</Label>
+                                <Input id="bloodPressure" value={userProfile.medicalData.bloodPressure ?? 'N/A'} readOnly />
+                            </div>
+                             <div>
+                                <Label htmlFor="bloodSugar">Blood Sugar</Label>
+                                <Input id="bloodSugar" value={userProfile.medicalData.bloodSugar ?? 'N/A'} readOnly />
+                            </div>
+                             <div>
+                                <Label htmlFor="cholesterol">Cholesterol</Label>
+                                <Input id="cholesterol" value={userProfile.medicalData.cholesterol ?? 'N/A'} readOnly />
+                            </div>
+                             <div>
+                                <Label htmlFor="spO2">SpO2</Label>
+                                <Input id="spO2" value={userProfile.medicalData.spO2 ?? 'N/A'} readOnly />
+                            </div>
+                        </div>
+                    </>
+                )}
+
+
                  <div className="flex justify-end">
                     <Button disabled>Edit Profile</Button>
                 </div>
