@@ -50,9 +50,21 @@ export function SignupForm() {
     const form = useForm<SignupFormValues>({
         resolver: zodResolver(signupSchema),
         defaultValues: {
-            name: '', email: '', password: '', phone: '',
-            height: 0, weight: 0,
-            medicalCondition: '', restrictions: '', cuisine: ''
+            name: '',
+            email: '',
+            password: '',
+            phone: '',
+            role: undefined, // Or a default role like "son"
+            height: 0,
+            weight: 0,
+            medicalCondition: '',
+            activityLevel: undefined, // Or a default like "sedentary"
+            vegOrNonVeg: undefined,
+            cuisine: '',
+            restrictions: '',
+            goalType: undefined,
+            targetWeight: 0,
+            targetDate: undefined,
         },
     });
 
@@ -214,20 +226,20 @@ export function SignupForm() {
                                 )}
                                 <FormField control={form.control} name="name" render={({ field }) => (
                                     <FormItem>
-                                        <FormControl><div className="relative"><User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Full Name" {...field} className="pl-10" /></div></FormControl>
+                                        <FormControl><div className="relative"><User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Full Name" {...field} /></div></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
                                 <FormField control={form.control} name="email" render={({ field }) => (
                                     <FormItem>
-                                        <FormControl><div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="email@example.com" {...field} className="pl-10" disabled={!!firebaseUser} /></div></FormControl>
+                                        <FormControl><div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="email@example.com" {...field} disabled={!!firebaseUser} /></div></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
                                 {!firebaseUser && (
                                     <FormField control={form.control} name="password" render={({ field }) => (
                                         <FormItem>
-                                            <FormControl><div className="relative"><KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="password" placeholder="Password" {...field} className="pl-10" /></div></FormControl>
+                                            <FormControl><div className="relative"><KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="password" placeholder="Password" {...field} /></div></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
@@ -235,7 +247,7 @@ export function SignupForm() {
                                 <div className="grid grid-cols-2 gap-4">
                                 <FormField control={form.control} name="phone" render={({ field }) => (
                                     <FormItem>
-                                        <FormControl><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Phone Number" {...field} className="pl-10" /></div></FormControl>
+                                        <FormControl><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Phone Number" {...field} /></div></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
@@ -266,14 +278,14 @@ export function SignupForm() {
                                     <FormField control={form.control} name="height" render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Height (cm)</FormLabel>
-                                            <FormControl><div className="relative"><Ruler className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="text" inputMode="decimal" {...field} className="pl-10" /></div></FormControl>
+                                            <FormControl><div className="relative"><Ruler className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="text" inputMode="decimal" {...field} /></div></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
                                     <FormField control={form.control} name="weight" render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Weight (kg)</FormLabel>
-                                            <FormControl><div className="relative"><Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="text" inputMode="decimal" {...field} className="pl-10" /></div></FormControl>
+                                            <FormControl><div className="relative"><Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="text" inputMode="decimal" {...field} /></div></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
@@ -285,7 +297,7 @@ export function SignupForm() {
                                 <FormField control={form.control} name="medicalCondition" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Medical Conditions</FormLabel>
-                                        <FormControl><div className="relative"><HeartPulse className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="e.g., Diabetes, Hypertension" {...field} className="pl-10" /></div></FormControl>
+                                        <FormControl><div className="relative"><HeartPulse className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="e.g., Diabetes, Hypertension" {...field} /></div></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
@@ -330,7 +342,7 @@ export function SignupForm() {
                                 <FormField control={form.control} name="cuisine" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Preferred Cuisine</FormLabel>
-                                        <FormControl><div className="relative"><ChefHat className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="e.g., Italian, Indian" {...field} className="pl-10" /></div></FormControl>
+                                        <FormControl><div className="relative"><ChefHat className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="e.g., Italian, Indian" {...field} /></div></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
@@ -360,7 +372,7 @@ export function SignupForm() {
                                 <FormField control={form.control} name="targetWeight" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Target Weight (kg)</FormLabel>
-                                        <FormControl><div className="relative"><Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="text" inputMode="decimal" {...field} className="pl-10" /></div></FormControl>
+                                        <FormControl><div className="relative"><Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="text" inputMode="decimal" {...field} /></div></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
@@ -410,3 +422,5 @@ export function SignupForm() {
         </Card>
     );
 }
+
+    
