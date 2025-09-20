@@ -60,3 +60,10 @@ export type MedicationReminder = {
   endDate: Date;
   taken: boolean;
 };
+
+export type ConsumedMacros = {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+};

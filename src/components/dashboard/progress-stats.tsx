@@ -1,12 +1,50 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ProgressRing } from "./progress-ring";
 
-export function ProgressStats() {
+"use client";
+
+import { Card, CardContent } from "@/components/ui/card";
+import { ProgressRing } from "./progress-ring";
+import type { ConsumedMacros } from "@/lib/types";
+
+interface ProgressStatsProps {
+    consumed: ConsumedMacros;
+    targets: ConsumedMacros;
+}
+
+export function ProgressStats({ consumed, targets }: ProgressStatsProps) {
+    const calculatePercentage = (consumed: number, target: number) => {
+        if (target === 0) return 0;
+        return Math.min(Math.round((consumed / target) * 100), 100);
+    };
+
     const stats = [
-        { percentage: 76, label: 'Calories', value: '1800/2400 kcal', colorClass: 'text-primary', glowClass: 'glow-primary' },
-        { percentage: 85, label: 'Protein', value: '120/140 g', colorClass: 'text-secondary', glowClass: 'glow-secondary' },
-        { percentage: 60, label: 'Carbs', value: '180/300 g', colorClass: 'text-accent', glowClass: 'glow-accent' },
-        { percentage: 90, label: 'Fats', value: '63/70 g', colorClass: 'text-chart-4', glowClass: 'glow-yellow' },
+        { 
+            percentage: calculatePercentage(consumed.calories, targets.calories), 
+            label: 'Calories', 
+            value: `${consumed.calories}/${targets.calories} kcal`, 
+            colorClass: 'text-primary', 
+            glowClass: 'glow-primary' 
+        },
+        { 
+            percentage: calculatePercentage(consumed.protein, targets.protein), 
+            label: 'Protein', 
+            value: `${consumed.protein}/${targets.protein} g`, 
+            colorClass: 'text-secondary', 
+            glowClass: 'glow-secondary' 
+        },
+        { 
+            percentage: calculatePercentage(consumed.carbs, targets.carbs), 
+            label: 'Carbs', 
+            value: `${consumed.carbs}/${targets.carbs} g`, 
+            colorClass: 'text-accent', 
+            glowClass: 'glow-accent' 
+        },
+        { 
+            percentage: calculatePercentage(consumed.fats, targets.fats), 
+            label: 'Fats', 
+            value: `${consumed.fats}/${targets.fats} g`, 
+            colorClass: 'text-chart-4', 
+            glowClass: 'glow-yellow' 
+        },
     ];
 
     return (

@@ -12,7 +12,11 @@ import { estimateMealCaloriesFromText } from '@/ai/flows/meal-text-calorie-estim
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '../ui/textarea';
 
-export function MealAnalyzer() {
+type MealAnalyzerProps = {
+    onMealAnalyzed: (macros: { protein: number; carbs: number; fats: number; calories: number; }) => void;
+};
+
+export function MealAnalyzer({ onMealAnalyzed }: MealAnalyzerProps) {
     const [preview, setPreview] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<any | null>(null);
@@ -107,6 +111,10 @@ export function MealAnalyzer() {
                 analysisResult = await estimateMealCalories({ mealImageDataUri: preview! });
             }
             setResult(analysisResult);
+            onMealAnalyzed({
+                calories: analysisResult.estimatedCalories,
+                ...analysisResult.estimatedMacros
+            });
 
             // Webhook integration
             try {
