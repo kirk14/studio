@@ -39,8 +39,6 @@ export type Meal = {
   };
   recipe: string;
   prepTime: string;
-  imageUrl?: string;
-  imageHint?: string;
 };
 
 export type DietPlan = {
@@ -56,7 +54,8 @@ export type MedicationReminder = {
   id: string;
   medicineName: string;
   dosage: string;
-  time: string;
+  startTime: string;
+  endTime: string;
   date: Date;
   taken: boolean;
 };
