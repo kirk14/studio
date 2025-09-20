@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { Apple, ArrowRight, ArrowLeft, User, Phone, Mail, KeyRound, Weight, Ruler, HeartPulse, Beef, ChefHat, Salad, Goal, Calendar as CalendarIcon } from "lucide-react";
+import { Apple, ArrowRight, ArrowLeft, User, Phone, Mail, KeyRound, Weight, Ruler, HeartPulse, Beef, ChefHat, Salad, Goal, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
 import { signupSchema, type SignupFormValues } from "@/lib/schemas";
+import { auth, db } from '@/lib/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
@@ -35,8 +39,10 @@ const steps = [
 
 export function SignupForm() {
     const router = useRouter();
+    const { toast } = useToast();
     const [currentStep, setCurrentStep] = useState(0);
     const [bmi, setBmi] = useState<number | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm<SignupFormValues>({
         resolver: zodResolver(signupSchema),
@@ -78,10 +84,38 @@ export function SignupForm() {
         }
     };
 
-    function onSubmit(data: SignupFormValues) {
-        console.log(data);
-        // Here you would handle actual signup logic
-        router.push("/dashboard");
+    async function onSubmit(data: SignupFormValues) {
+        setIsLoading(true);
+        try {
+            const { email, password, ...rest } = data;
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            const userData = {
+                uid: user.uid,
+                email: user.email,
+                ...rest,
+                targetDate: format(data.targetDate, "yyyy-MM-dd"),
+                bmi,
+            };
+
+            await setDoc(doc(db, "users", user.uid), userData);
+
+            toast({
+                title: "Account Created",
+                description: "Your account has been successfully created.",
+            });
+            router.push("/dashboard");
+
+        } catch (error: any) {
+             toast({
+                variant: "destructive",
+                title: "Uh oh! Something went wrong.",
+                description: error.message || "There was a problem with your request.",
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (
@@ -295,8 +329,8 @@ export function SignupForm() {
                                 </Button>
                             )}
                             {currentStep === steps.length - 1 && (
-                                <Button type="submit" className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]">
-                                    Create Account
+                                <Button type="submit" disabled={isLoading} className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]">
+                                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Create Account'}
                                 </Button>
                             )}
                         </div>

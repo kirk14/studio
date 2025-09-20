@@ -4,8 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { useRouter } from "next/navigation";
-import { Apple, KeyRound, Mail } from "lucide-react";
-
+import { Apple, KeyRound, Mail, Loader2 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -19,6 +19,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { loginSchema } from "@/lib/schemas";
 import { Separator } from "../ui/separator";
+import { auth } from "@/lib/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
@@ -32,6 +35,9 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export function LoginForm() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -40,10 +46,24 @@ export function LoginForm() {
     },
   });
 
-  function onSubmit(data: z.infer<typeof loginSchema>) {
-    console.log(data);
-    // Here you would handle actual login logic
-    router.push("/dashboard");
+  async function onSubmit(data: z.infer<typeof loginSchema>) {
+    setIsLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, data.email, data.password);
+      toast({
+          title: "Logged In",
+          description: "You have successfully logged in.",
+      });
+      router.push("/dashboard");
+    } catch (error: any) {
+       toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: error.message || "Please check your credentials and try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -107,8 +127,8 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
-             <Button type="submit" className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]">
-                Login
+             <Button type="submit" disabled={isLoading} className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]">
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Login'}
             </Button>
           </form>
         </Form>
