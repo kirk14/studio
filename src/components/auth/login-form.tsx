@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { loginSchema } from "@/lib/schemas";
 import { Separator } from "../ui/separator";
 import { auth, db } from "@/lib/firebase";
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from "firebase/auth";
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
