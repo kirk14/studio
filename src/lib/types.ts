@@ -17,6 +17,7 @@ export type User = {
     cholesterol?: string;
     spO2?: string;
   };
+  latestReportId?: string; // Added to reference the latest report
   lifestyleHabits: {
     activityLevel: 'sedentary' | 'lightly active' | 'moderately active' | 'very active';
     sleepPattern?: string; // Not in form, but in schema

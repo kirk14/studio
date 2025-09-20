@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useContext } from 'react';
@@ -14,18 +15,15 @@ import { Upload, Loader2, Sparkles, XCircle, FileText, HeartPulse, Droplet, Acti
 import { useToast } from '@/hooks/use-toast';
 import { analyzeMedicalReport, AnalyzeMedicalReportOutput } from '@/ai/flows/medical-report-analysis';
 import { UserContext } from '@/context/user-context';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '../ui/form';
+import { Form, FormControl, FormField, FormLabel, FormMessage } from '../ui/form';
 import { classifyHealthMetrics, ClassifyHealthMetricsOutput } from '@/ai/flows/classify-health-metrics';
 import { summarizeHealthRisks, SummarizeHealthRisksOutput } from '@/ai/flows/summarize-health-risks';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 import { Skeleton } from '../ui/skeleton';
-import { generatePersonalizedDietPlan, PersonalizedDietPlanOutput } from '@/ai/flows/personalized-diet-plan-generation';
-import { RecipeCard } from './recipe-card';
-import { ScrollArea } from '../ui/scroll-area';
 
 const reportSchema = z.object({
   bloodPressure: z.string().optional(),
@@ -45,14 +43,10 @@ export function MedicalReportUploader() {
     const [isSaving, setIsSaving] = useState(false);
     const [dataSaved, setDataSaved] = useState(false);
     const [inputMode, setInputMode] = useState<'upload' | 'manual'>('upload');
-    const [dietPlan, setDietPlan] = useState<PersonalizedDietPlanOutput | null>(null);
-    const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
-    const [planError, setPlanError] = useState<string | null>(null);
-
+    
     const { toast } = useToast();
     const userContext = useContext(UserContext);
     const firebaseUser = userContext?.firebaseUser;
-    const userProfile = userContext?.userProfile;
     
     const form = useForm<ReportFormValues>({
         resolver: zodResolver(reportSchema),
@@ -125,10 +119,22 @@ export function MedicalReportUploader() {
         }
         setIsSaving(true);
         try {
+            // Add a new document to the 'medicalReports' collection
+            const reportDocRef = await addDoc(collection(db, 'medicalReports'), {
+                userId: firebaseUser.uid,
+                ...data,
+                timestamp: serverTimestamp(),
+            });
+
+            // Update the user's profile with a reference to the latest report
             const userDocRef = doc(db, 'users', firebaseUser.uid);
-            await updateDoc(userDocRef, { medicalData: data });
+            await updateDoc(userDocRef, { 
+                medicalData: data, // Keep storing the latest data here for quick access
+                latestReportId: reportDocRef.id // Store reference to the new report document
+            });
+
             setDataSaved(true);
-            toast({ title: 'Success!', description: 'Your medical data has been saved.' });
+            toast({ title: 'Success!', description: 'Your medical report has been saved.' });
         } catch (error) {
             console.error('Error saving medical data: ', error);
             toast({ variant: 'destructive', title: 'Save failed', description: 'Could not save your medical data.' });
@@ -137,61 +143,12 @@ export function MedicalReportUploader() {
         }
     }
 
-    const handleGeneratePlan = async () => {
-        if (!firebaseUser || !userProfile) {
-          toast({ variant: 'destructive', title: 'User data not found.' });
-          return;
-        };
-
-        setIsGeneratingPlan(true);
-        setPlanError(null);
-        setDietPlan(null);
-        try {
-            const plan = await generatePersonalizedDietPlan({
-                userID: firebaseUser.uid,
-                name: userProfile.name,
-                role: userProfile.role,
-                personalInfo: {
-                    height: userProfile.personalInfo.height,
-                    weight: userProfile.personalInfo.weight,
-                    bmi: userProfile.personalInfo.bmi,
-                },
-                medicalCondition: userProfile.medicalCondition || "None",
-                // Use the newly saved data from the form
-                medicalData: form.getValues(),
-                lifestyleHabits: {
-                    activityLevel: userProfile.lifestyleHabits.activityLevel,
-                    sleepPattern: userProfile.lifestyleHabits.sleepPattern || "Not specified",
-                    workShift: userProfile.lifestyleHabits.workShift || "Not specified",
-                },
-                dietaryPreferences: {
-                    vegOrNonVeg: userProfile.dietaryPreferences.vegOrNonVeg,
-                    cuisine: userProfile.dietaryPreferences.cuisine,
-                    restrictions: userProfile.dietaryPreferences.restrictions || "None",
-                },
-                healthGoals: {
-                    goalType: userProfile.healthGoals.goalType,
-                    targetWeight: userProfile.healthGoals.targetWeight,
-                    targetDate: userProfile.healthGoals.targetDate,
-                },
-            });
-            setDietPlan(plan);
-        } catch (err) {
-            console.error("Error generating diet plan:", err);
-            setPlanError("Failed to generate a diet plan. Please try again later.");
-        } finally {
-            setIsGeneratingPlan(false);
-        }
-    };
-
     const clearAll = () => {
         setPreview(null);
         setAnalysisResult(null);
         setClassifications(null);
         setRiskSummary(null);
         setDataSaved(false);
-        setDietPlan(null);
-        setPlanError(null);
         form.reset();
     }
     
@@ -204,49 +161,13 @@ export function MedicalReportUploader() {
         }
     }
 
-    const renderDietPlan = () => {
-        if (isGeneratingPlan) {
-            return (
-                <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                    <p className="mt-4 text-muted-foreground">Generating your new diet plan...</p>
-                </div>
-            );
-        }
-
-        if (planError) {
-             return (
-                 <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
-                    <Alert variant="destructive" className="max-w-sm">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>Generation Failed</AlertTitle>
-                        <AlertDescription>{planError}</AlertDescription>
-                    </Alert>
-                </div>
-            );
-        }
-
-        if (dietPlan && dietPlan.dailyPlan.meals.length > 0) {
-            return (
-                <ScrollArea className="h-[550px] pr-4">
-                    <div className="space-y-4">
-                        {dietPlan.dailyPlan.meals.map((meal, index) => (
-                            <RecipeCard key={index} meal={meal} />
-                        ))}
-                    </div>
-                </ScrollArea>
-            );
-        }
-        return null;
-    }
-
 
     return (
-        <div className="grid gap-8 md:grid-cols-2 max-w-7xl mx-auto">
-            <Card className="md:col-span-1">
+        <div className="grid gap-8 md:grid-cols-1 max-w-4xl mx-auto">
+            <Card>
                 <CardHeader>
                     <CardTitle>Upload or Enter Medical Data</CardTitle>
-                    <CardDescription>Use our AI to extract info from a report, or enter it manually. This data will be used to generate a tailored diet plan.</CardDescription>
+                    <CardDescription>Use our AI to extract info from a report, or enter it manually.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="grid grid-cols-2 gap-2">
@@ -372,31 +293,6 @@ export function MedicalReportUploader() {
                     )}
                 </CardContent>
             </Card>
-
-            <Card className="md:col-span-1">
-                 <CardHeader>
-                    <CardTitle>Your New Diet Plan</CardTitle>
-                    <CardDescription>Based on your latest medical data.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {!dataSaved && !dietPlan && (
-                        <div className="flex flex-col items-center justify-center text-center text-muted-foreground min-h-[400px]">
-                            <ChefHat className="h-12 w-12 mb-4"/>
-                            <p>Your personalized diet plan will appear here after you save your medical data.</p>
-                        </div>
-                    )}
-                    {dataSaved && !dietPlan && (
-                        <div className="flex flex-col items-center justify-center text-center min-h-[400px]">
-                            <Button onClick={handleGeneratePlan} disabled={isGeneratingPlan}>
-                                {isGeneratingPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                Generate Diet Plan
-                            </Button>
-                        </div>
-                    )}
-                    {renderDietPlan()}
-                </CardContent>
-            </Card>
-
         </div>
     );
 }
