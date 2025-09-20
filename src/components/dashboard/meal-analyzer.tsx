@@ -107,6 +107,24 @@ export function MealAnalyzer() {
                 analysisResult = await estimateMealCalories({ mealImageDataUri: preview! });
             }
             setResult(analysisResult);
+
+            // Webhook integration
+            try {
+                await fetch('https://sattwik19.app.n8n.cloud/webhook-test/4dfbcdb8-9a48-439a-a97a-d48794c4da21', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        source: 'MealAnalyzer',
+                        ...analysisResult
+                    }),
+                });
+              } catch (webhookError) {
+                  console.error("Error sending webhook: ", webhookError);
+                  // Non-blocking, so we don't show an error to the user for this
+              }
+
         } catch (error) {
             console.error(error);
             toast({
