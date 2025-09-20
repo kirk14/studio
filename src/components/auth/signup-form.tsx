@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { Apple, ArrowRight, ArrowLeft, User, Phone, Mail, KeyRound, Weight, Ruler, HeartPulse, Beef, ChefHat, Salad, Goal, Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { Apple, ArrowRight, ArrowLeft, User, Phone, Mail, KeyRound, Weight, Ruler, HeartPulse, Beef, ChefHat, Salad, Goal, Calendar as CalendarIcon, Loader2, LogOut } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -266,14 +266,14 @@ export function SignupForm() {
                                     <FormField control={form.control} name="height" render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Height (cm)</FormLabel>
-                                            <FormControl><div className="relative"><Ruler className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="number" {...field} className="pl-10" /></div></FormControl>
+                                            <FormControl><div className="relative"><Ruler className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="text" inputMode="decimal" {...field} className="pl-10" /></div></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
                                     <FormField control={form.control} name="weight" render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Weight (kg)</FormLabel>
-                                            <FormControl><div className="relative"><Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="number" {...field} className="pl-10" /></div></FormControl>
+                                            <FormControl><div className="relative"><Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="text" inputMode="decimal" {...field} className="pl-10" /></div></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
@@ -360,7 +360,7 @@ export function SignupForm() {
                                 <FormField control={form.control} name="targetWeight" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Target Weight (kg)</FormLabel>
-                                        <FormControl><div className="relative"><Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="number" {...field} className="pl-10" /></div></FormControl>
+                                        <FormControl><div className="relative"><Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="text" inputMode="decimal" {...field} className="pl-10" /></div></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
@@ -410,5 +410,3 @@ export function SignupForm() {
         </Card>
     );
 }
-
-    

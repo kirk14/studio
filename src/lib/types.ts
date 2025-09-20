@@ -8,7 +8,7 @@ export type User = {
   personalInfo: {
     height: number;
     weight: number;
-    BMI: number;
+    bmi: number;
   };
   medicalCondition?: string;
   lifestyleHabits: {

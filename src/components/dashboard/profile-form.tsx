@@ -126,27 +126,27 @@ export function ProfileForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <Label htmlFor="height">Height</Label>
-                        <Input id="height" value={`${userProfile.personalInfo.height} cm`} readOnly />
+                        <Input id="height" value={`${userProfile.personalInfo?.height ?? 'N/A'} cm`} readOnly />
                     </div>
                     <div>
                         <Label htmlFor="weight">Weight</Label>
-                        <Input id="weight" value={`${userProfile.personalInfo.weight} kg`} readOnly />
+                        <Input id="weight" value={`${userProfile.personalInfo?.weight ?? 'N/A'} kg`} readOnly />
                     </div>
                     <div>
                         <Label htmlFor="bmi">BMI</Label>
-                        <Input id="bmi" value={userProfile.personalInfo.BMI} readOnly />
+                        <Input id="bmi" value={userProfile.personalInfo?.bmi ?? 'N/A'} readOnly />
                     </div>
                     <div>
                         <Label htmlFor="activityLevel">Activity Level</Label>
-                        <Input id="activityLevel" value={userProfile.lifestyleHabits.activityLevel} readOnly className="capitalize"/>
+                        <Input id="activityLevel" value={userProfile.lifestyleHabits?.activityLevel ?? 'N/A'} readOnly className="capitalize"/>
                     </div>
                      <div>
                         <Label htmlFor="goal">Health Goal</Label>
-                        <Input id="goal" value={userProfile.healthGoals.goalType} readOnly className="capitalize"/>
+                        <Input id="goal" value={userProfile.healthGoals?.goalType ?? 'N/A'} readOnly className="capitalize"/>
                     </div>
                     <div>
                         <Label htmlFor="targetWeight">Target Weight</Label>
-                        <Input id="targetWeight" value={`${userProfile.healthGoals.targetWeight} kg`} readOnly />
+                        <Input id="targetWeight" value={`${userProfile.healthGoals?.targetWeight ?? 'N/A'} kg`} readOnly />
                     </div>
                 </div>
                  <div className="flex justify-end">
