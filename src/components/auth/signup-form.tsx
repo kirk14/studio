@@ -18,8 +18,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
 import { signupSchema, type SignupFormValues } from "@/lib/schemas";
 import { auth, db } from '@/lib/firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -43,6 +43,7 @@ export function SignupForm() {
     const [currentStep, setCurrentStep] = useState(0);
     const [bmi, setBmi] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
     const form = useForm<SignupFormValues>({
         resolver: zodResolver(signupSchema),
@@ -117,6 +118,43 @@ export function SignupForm() {
             setIsLoading(false);
         }
     }
+    
+    const handleGoogleSignIn = async () => {
+        setIsGoogleLoading(true);
+        const provider = new GoogleAuthProvider();
+        try {
+          const result = await signInWithPopup(auth, provider);
+          const user = result.user;
+    
+          const userDocRef = doc(db, "users", user.uid);
+          const userDoc = await getDoc(userDocRef);
+    
+          if (!userDoc.exists()) {
+            // New user, create a document.
+            await setDoc(userDocRef, {
+                uid: user.uid,
+                email: user.email,
+                name: user.displayName,
+                // You may want to prompt the user to complete their profile
+                // as other details are not available from Google Sign-In
+            });
+          }
+    
+          toast({
+              title: "Account Created",
+              description: "You have successfully signed up with Google.",
+          });
+          router.push("/dashboard");
+        } catch (error: any) {
+           toast({
+              variant: "destructive",
+              title: "Google Sign-In Failed",
+              description: error.message || "Could not sign in with Google. Please try again.",
+          });
+        } finally {
+            setIsGoogleLoading(false);
+        }
+      }
 
     return (
         <Card className="border-0 shadow-none">
@@ -137,8 +175,8 @@ export function SignupForm() {
                         {currentStep === 0 && (
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Button variant="outline" className="w-full"><GoogleIcon className="mr-2 h-5 w-5"/> Google</Button>
-                                    <Button variant="outline" className="w-full"><Apple className="mr-2 h-5 w-5"/> Apple</Button>
+                                    <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}><GoogleIcon className="mr-2 h-5 w-5"/> Google</Button>
+                                    <Button variant="outline" className="w-full" disabled={isLoading || isGoogleLoading}><Apple className="mr-2 h-5 w-5"/> Apple</Button>
                                 </div>
                                 <div className="relative">
                                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
@@ -319,17 +357,17 @@ export function SignupForm() {
                         
                         <div className="flex gap-4 pt-4">
                             {currentStep > 0 && (
-                                <Button type="button" onClick={prev} variant="outline" className="w-full">
+                                <Button type="button" onClick={prev} variant="outline" className="w-full" disabled={isLoading || isGoogleLoading}>
                                     <ArrowLeft className="mr-2 h-4 w-4"/> Previous
                                 </Button>
                             )}
                             {currentStep < steps.length - 1 && (
-                                <Button type="button" onClick={next} className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]">
+                                <Button type="button" onClick={next} className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]" disabled={isLoading || isGoogleLoading}>
                                     Next <ArrowRight className="ml-2 h-4 w-4"/>
                                 </Button>
                             )}
                             {currentStep === steps.length - 1 && (
-                                <Button type="submit" disabled={isLoading} className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]">
+                                <Button type="submit" disabled={isLoading || isGoogleLoading} className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]">
                                      {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Create Account'}
                                 </Button>
                             )}

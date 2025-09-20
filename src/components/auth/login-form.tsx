@@ -19,8 +19,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { loginSchema } from "@/lib/schemas";
 import { Separator } from "../ui/separator";
-import { auth } from "@/lib/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth, db } from "@/lib/firebase";
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -37,6 +38,7 @@ export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -66,6 +68,43 @@ export function LoginForm() {
     }
   }
 
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        // New user, create a document.
+        await setDoc(userDocRef, {
+            uid: user.uid,
+            email: user.email,
+            name: user.displayName,
+            // You may want to prompt the user to complete their profile
+            // as other details are not available from Google Sign-In
+        });
+      }
+
+      toast({
+          title: "Logged In",
+          description: "You have successfully logged in with Google.",
+      });
+      router.push("/dashboard");
+    } catch (error: any) {
+       toast({
+          variant: "destructive",
+          title: "Google Sign-In Failed",
+          description: error.message || "Could not sign in with Google. Please try again.",
+      });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  }
+
   return (
     <Card className="border-0 shadow-none">
       <CardHeader className="text-center">
@@ -76,10 +115,10 @@ export function LoginForm() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" className="w-full">
-                <GoogleIcon className="mr-2 h-5 w-5"/> Google
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                {isGoogleLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5"/>} Google
             </Button>
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" disabled={isLoading || isGoogleLoading}>
                 <Apple className="mr-2 h-5 w-5"/> Apple
             </Button>
         </div>
@@ -127,7 +166,7 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
-             <Button type="submit" disabled={isLoading} className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]">
+             <Button type="submit" disabled={isLoading || isGoogleLoading} className="w-full [filter:drop-shadow(0_0_6px_hsl(var(--primary)/0.8))]">
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Login'}
             </Button>
           </form>
