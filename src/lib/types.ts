@@ -2,7 +2,7 @@
 export type User = {
   userID: string;
   name: string;
-  phone: string;
+  phone?: string;
   email: string;
   role: 'father' | 'mother' | 'son' | 'daughter' | 'cousin';
   personalInfo: {
