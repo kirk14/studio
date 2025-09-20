@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -178,7 +179,7 @@ export function MealAnalyzer() {
                 {inputMode === 'camera' && (
                     <div className="space-y-4">
                         <div className="relative p-2 border-2 border-dashed rounded-lg">
-                             <video ref={videoRef} className="w-full aspect-video rounded-md" autoPlay muted playsInline />
+                             <video ref={videoRef} className="w-full aspect-square rounded-md" autoPlay muted playsInline />
                              <canvas ref={canvasRef} className="hidden" />
                         </div>
                         {hasCameraPermission === false && (
