@@ -13,12 +13,12 @@ export function RecipeCard({ meal }: { meal: Meal }) {
         <div className="absolute inset-0 [backface-visibility:hidden]">
           <Card className="h-full w-full overflow-hidden">
             <Image
-              src="https://picsum.photos/seed/1/600/400"
+              src={meal.imageUrl}
               alt={meal.name}
               width={600}
               height={400}
               className="w-full h-3/5 object-cover"
-              data-ai-hint="healthy food"
+              data-ai-hint={meal.imageHint}
             />
             <CardContent className="p-4">
               <h3 className="font-bold text-lg">{meal.name}</h3>

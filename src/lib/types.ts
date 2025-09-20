@@ -39,6 +39,8 @@ export type Meal = {
   };
   recipe: string;
   prepTime: string;
+  imageUrl: string;
+  imageHint: string;
 };
 
 export type DietPlan = {
