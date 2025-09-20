@@ -123,7 +123,7 @@ export function MealAnalyzer({ onMealAnalyzed }: MealAnalyzerProps) {
 
             // Webhook integration
             try {
-                const webhookUrl = new URL('https://sattwik19.app.n8n.cloud/webhook/4dfbcdb8-9a48-439a-a97a-d48794c4da21');
+                const webhookUrl = new URL('https://sattwik19.app.n8n.cloud/webhook-test/4dfbcdb8-9a48-439a-a97a-d48794c4da21');
                 const params = new URLSearchParams({
                     source: 'MealAnalyzer',
                     estimatedCalories: analysisResult.estimatedCalories.toString(),
