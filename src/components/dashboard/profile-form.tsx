@@ -12,11 +12,15 @@ import { UserContext } from "@/context/user-context";
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
 import { classifyHealthMetrics, ClassifyHealthMetricsOutput } from "@/ai/flows/classify-health-metrics";
+import { summarizeHealthRisks, SummarizeHealthRisksOutput } from "@/ai/flows/summarize-health-risks";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 export function ProfileForm() {
     const userContext = useContext(UserContext);
     const [classifications, setClassifications] = useState<ClassifyHealthMetricsOutput | null>(null);
-    const [isClassifying, setIsClassifying] = useState(false);
+    const [riskSummary, setRiskSummary] = useState<SummarizeHealthRisksOutput | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     const firebaseUser = userContext?.firebaseUser;
     const userProfile = userContext?.userProfile;
@@ -24,19 +28,24 @@ export function ProfileForm() {
 
     useEffect(() => {
         if (userProfile?.medicalData) {
-            const runClassification = async () => {
-                setIsClassifying(true);
+            const runAnalysis = async () => {
+                setIsAnalyzing(true);
                 try {
-                    const result = await classifyHealthMetrics(userProfile.medicalData!);
-                    setClassifications(result);
+                    const [classificationResult, summaryResult] = await Promise.all([
+                        classifyHealthMetrics(userProfile.medicalData!),
+                        summarizeHealthRisks(userProfile.medicalData!)
+                    ]);
+                    setClassifications(classificationResult);
+                    setRiskSummary(summaryResult);
                 } catch (error) {
-                    console.error("Failed to classify health metrics:", error);
+                    console.error("Failed to analyze health metrics:", error);
                     setClassifications(null);
+                    setRiskSummary(null);
                 } finally {
-                    setIsClassifying(false);
+                    setIsAnalyzing(false);
                 }
             };
-            runClassification();
+            runAnalysis();
         }
     }, [userProfile?.medicalData]);
 
@@ -128,7 +137,7 @@ export function ProfileForm() {
         <div>
             <div className="flex items-center justify-between mb-1">
                 <Label htmlFor={label.toLowerCase()}>{label}</Label>
-                {isClassifying ? (
+                {isAnalyzing ? (
                      <Skeleton className="h-5 w-16" />
                 ) : (
                     classification && classification !== 'N/A' && (
@@ -182,7 +191,7 @@ export function ProfileForm() {
                     </div>
                 </div>
 
-                {(userProfile.medicalData || isClassifying) && (
+                {(userProfile.medicalData || isAnalyzing) && (
                     <>
                         <h3 className="text-xl font-semibold border-t pt-6">Medical Data</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -208,6 +217,27 @@ export function ProfileForm() {
                             />
                         </div>
                     </>
+                )}
+
+                {(isAnalyzing || riskSummary) && (
+                     <div className="space-y-4 pt-6 border-t">
+                        <h3 className="text-xl font-semibold">AI Health Risk Analysis</h3>
+                        {isAnalyzing ? (
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-3/4" />
+                            </div>
+                        ) : riskSummary ? (
+                            <Alert>
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTitle>Analysis Summary</AlertTitle>
+                                <AlertDescription>
+                                    {riskSummary.summary}
+                                </AlertDescription>
+                            </Alert>
+                        ) : null}
+                     </div>
                 )}
 
 
