@@ -10,7 +10,7 @@ const placeholderMeals: Meal[] = [
         macros: { protein: 40, carbs: 20, fats: 22 },
         recipe: "1. Grill 150g chicken breast.\n2. Chop lettuce, tomatoes, cucumbers.\n3. Mix with olive oil dressing.\n4. Top with chicken.",
         prepTime: "20 min",
-        imageUrl: "https://picsum.photos/seed/1/600/400",
+        imageUrl: "https://picsum.photos/seed/chickensalad/600/400",
         imageHint: "grilled chicken"
     },
     {
@@ -19,7 +19,7 @@ const placeholderMeals: Meal[] = [
         macros: { protein: 25, carbs: 70, fats: 18 },
         recipe: "1. Cook 1 cup of quinoa.\n2. Add black beans, corn, and avocado.\n3. Squeeze lime juice on top.",
         prepTime: "25 min",
-        imageUrl: "https://picsum.photos/seed/2/600/400",
+        imageUrl: "https://picsum.photos/seed/quinoabowl/600/400",
         imageHint: "quinoa bowl"
     },
     {
@@ -28,7 +28,7 @@ const placeholderMeals: Meal[] = [
         macros: { protein: 45, carbs: 15, fats: 40 },
         recipe: "1. Season 200g salmon fillet.\n2. Bake at 200°C for 15 mins.\n3. Roast asparagus with olive oil.",
         prepTime: "20 min",
-        imageUrl: "https://picsum.photos/seed/3/600/400",
+        imageUrl: "https://picsum.photos/seed/salmon/600/400",
         imageHint: "grilled salmon"
     }
 ];
