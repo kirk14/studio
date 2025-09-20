@@ -4,10 +4,10 @@ import {
   CircleUser,
   Home,
   Menu,
-  Package2,
   Users,
   Dumbbell,
   BookCopy,
+  Pill,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -45,15 +45,22 @@ export function Header() {
               <Logo />
             </Link>
             <Link
-              href="#"
+              href="/dashboard"
               className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
             >
               <Home className="h-5 w-5" />
               Dashboard
             </Link>
             <Link
+              href="/dashboard/medication"
+              className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+            >
+              <Pill className="h-5 w-5" />
+              Medication
+            </Link>
+            <Link
               href="#"
-              className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
+              className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
             >
               <BookCopy className="h-5 w-5" />
               Diet Plan

@@ -49,3 +49,12 @@ export type DietPlan = {
   };
   timestamp: Date;
 };
+
+export type MedicationReminder = {
+  id: string;
+  medicineName: string;
+  dosage: string;
+  time: string;
+  date: Date;
+  taken: boolean;
+};
