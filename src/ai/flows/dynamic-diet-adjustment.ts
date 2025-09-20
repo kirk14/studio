@@ -11,11 +11,20 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+const ConsumedMealSchema = z.object({
+  name: z.string().describe('The name of the consumed meal.'),
+  calories: z.number().describe('The estimated calories of the consumed meal.'),
+  protein: z.number().describe('The estimated protein of the consumed meal in grams.'),
+  carbs: z.number().describe('The estimated carbohydrates of the consumed meal in grams.'),
+  fats: z.number().describe('The estimated fat of the consumed meal in grams.'),
+});
+
 const AdjustDietPlanInputSchema = z.object({
   userId: z.string().describe('The ID of the user whose diet plan needs adjustment.'),
   steps: z.number().describe('The number of steps taken by the user today.'),
   caloriesBurned: z.number().describe('The number of calories burned by the user today.'),
   currentDietPlan: z.string().describe('The current diet plan of the user in JSON format.'),
+  consumedMeals: z.array(ConsumedMealSchema).describe('A list of meals consumed by the user today.'),
 });
 export type AdjustDietPlanInput = z.infer<typeof AdjustDietPlanInputSchema>;
 
@@ -33,16 +42,22 @@ const prompt = ai.definePrompt({
   name: 'adjustDietPlanPrompt',
   input: {schema: AdjustDietPlanInputSchema},
   output: {schema: AdjustDietPlanOutputSchema},
-  prompt: `You are a personal nutrition assistant. Your task is to adjust the user's diet plan based on their activity data.
+  prompt: `You are a personal nutrition assistant. Your task is to adjust the user's diet plan based on their activity data and consumed meals.
 
   User ID: {{{userId}}}
   Steps taken: {{{steps}}}
   Calories burned: {{{caloriesBurned}}}
   Current diet plan: {{{currentDietPlan}}}
+  Consumed meals today: {{json consumedMeals}}
 
-  Analyze the user's activity data and current diet plan. If the user has burned more calories than planned, suggest increasing the calorie intake. If the user has been less active, suggest reducing the calorie intake. Provide the adjusted diet plan in JSON format and explain the reason for the adjustment.
+  Analyze the user's activity data, consumed meals, and current diet plan. 
+  - If the user has burned more calories than planned, you can suggest increasing the calorie intake in the remaining meals. 
+  - If the user has been less active, suggest reducing the calorie intake.
+  - If the user has consumed a meal that was not in the original plan, adjust the remaining meals to stay within the daily targets.
+  - Recalculate the remaining meals for the day. Do not include the meals already consumed in the new plan.
 
-  Ensure the adjusted diet plan maintains a balanced macro ratio.
+  Provide the adjusted diet plan for the rest of the day in JSON format and explain the reason for the adjustment.
+  Ensure the adjusted diet plan maintains a balanced macro ratio and helps the user reach their goals.
 
   Output the adjusted diet plan in JSON format, along with the reason for the adjustments.
   `,

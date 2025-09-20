@@ -12,9 +12,13 @@ import { doc, getDoc } from "firebase/firestore";
 import { Loader2, ServerCrash } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "../ui/alert";
 
-export function DietPlan() {
+interface DietPlanProps {
+  dietPlan: PersonalizedDietPlanOutput | null;
+  onInitialPlanGenerated: (plan: PersonalizedDietPlanOutput) => void;
+}
+
+export function DietPlan({ dietPlan, onInitialPlanGenerated }: DietPlanProps) {
     const [firebaseUser, setFirebaseUser] = useState<FirebaseAuthUser | null>(null);
-    const [dietPlan, setDietPlan] = useState<PersonalizedDietPlanOutput | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +35,10 @@ export function DietPlan() {
     }, []);
 
     useEffect(() => {
-        if (!firebaseUser) return;
+        if (!firebaseUser || dietPlan) {
+          setIsLoading(false);
+          return;
+        };
 
         const fetchAndGeneratePlan = async () => {
             setIsLoading(true);
@@ -69,7 +76,7 @@ export function DietPlan() {
                             targetDate: userData.healthGoals.targetDate,
                         },
                     });
-                    setDietPlan(plan);
+                    onInitialPlanGenerated(plan);
                 } else {
                     setError("User profile not found. Please complete your profile.");
                 }
@@ -82,7 +89,7 @@ export function DietPlan() {
         };
 
         fetchAndGeneratePlan();
-    }, [firebaseUser]);
+    }, [firebaseUser, dietPlan, onInitialPlanGenerated]);
 
     const renderContent = () => {
         if (isLoading) {

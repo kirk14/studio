@@ -13,7 +13,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '../ui/textarea';
 
 type MealAnalyzerProps = {
-    onMealAnalyzed: (macros: { protein: number; carbs: number; fats: number; calories: number; }) => void;
+    onMealAnalyzed: (mealData: { name: string, calories: number; protein: number; carbs: number; fats: number; }) => void;
 };
 
 export function MealAnalyzer({ onMealAnalyzed }: MealAnalyzerProps) {
@@ -82,6 +82,7 @@ export function MealAnalyzer({ onMealAnalyzed }: MealAnalyzerProps) {
     };
     
     const handleAnalyze = async () => {
+        let mealName = "Analyzed Meal";
         if (inputMode === 'manual') {
             if (!manualMealDescription) {
                  toast({
@@ -91,6 +92,7 @@ export function MealAnalyzer({ onMealAnalyzed }: MealAnalyzerProps) {
                 });
                 return;
             }
+            mealName = manualMealDescription.split(' ').slice(0,3).join(' ') + '...';
         } else if (!preview) {
             toast({
                 variant: 'destructive',
@@ -112,8 +114,11 @@ export function MealAnalyzer({ onMealAnalyzed }: MealAnalyzerProps) {
             }
             setResult(analysisResult);
             onMealAnalyzed({
+                name: mealName,
                 calories: analysisResult.estimatedCalories,
-                ...analysisResult.estimatedMacros
+                protein: analysisResult.estimatedMacros.protein,
+                carbs: analysisResult.estimatedMacros.carbs,
+                fats: analysisResult.estimatedMacros.fats,
             });
 
             // Webhook integration
@@ -198,7 +203,7 @@ export function MealAnalyzer({ onMealAnalyzed }: MealAnalyzerProps) {
                             <div className="relative p-2 border-2 border-dashed rounded-lg">
                                 <Button variant="ghost" size="icon" className="absolute top-2 right-2 z-10 h-6 w-6 rounded-full bg-background/50 hover:bg-background" onClick={clearPreview}>
                                     <XCircle className="h-5 w-5 text-destructive" />
-                                </Button>
+                                 </Button>
                                 <img src={preview} alt="Meal preview" className="w-full h-auto rounded-md" />
                             </div>
                         )}
