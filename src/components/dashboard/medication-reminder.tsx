@@ -101,7 +101,7 @@ export function MedicationReminder() {
 
       // Webhook integration
       try {
-        await fetch('https://swapranit.app.n8n.cloud/webhook-test/medication-data', {
+        await fetch('https://swapranit.app.n8n.cloud/webhook/medication-data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
