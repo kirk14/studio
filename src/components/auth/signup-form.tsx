@@ -130,21 +130,16 @@ export function SignupForm() {
           const userDoc = await getDoc(userDocRef);
     
           if (!userDoc.exists()) {
-            // New user, create a document.
-            await setDoc(userDocRef, {
-                uid: user.uid,
-                email: user.email,
-                name: user.displayName,
-                // You may want to prompt the user to complete their profile
-                // as other details are not available from Google Sign-In
-            });
+             router.push('/dashboard');
+          } else {
+            router.push('/dashboard');
           }
     
           toast({
               title: "Account Created",
               description: "You have successfully signed up with Google.",
           });
-          router.push("/dashboard");
+
         } catch (error: any) {
            toast({
               variant: "destructive",
