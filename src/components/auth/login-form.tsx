@@ -18,10 +18,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { loginSchema } from "@/lib/schemas";
-import { Separator } from "../ui/separator";
 import { auth, db } from "@/lib/firebase";
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -78,22 +77,21 @@ export function LoginForm() {
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
 
-      if (!userDoc.exists()) {
-        // New user, create a document.
-        await setDoc(userDocRef, {
-            uid: user.uid,
-            email: user.email,
-            name: user.displayName,
-            // You may want to prompt the user to complete their profile
-            // as other details are not available from Google Sign-In
+      if (userDoc.exists()) {
+        // Existing user, log them in
+        toast({
+            title: "Logged In",
+            description: "You have successfully logged in with Google.",
         });
+        router.push("/dashboard");
+      } else {
+        // New user, redirect to complete signup
+        toast({
+            title: "Complete Your Profile",
+            description: "Welcome! Please complete your registration to continue.",
+        });
+        router.push("/auth?screen=signup");
       }
-
-      toast({
-          title: "Logged In",
-          description: "You have successfully logged in with Google.",
-      });
-      router.push("/dashboard");
     } catch (error: any) {
        toast({
           variant: "destructive",
