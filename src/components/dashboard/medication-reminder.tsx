@@ -19,6 +19,7 @@ import { collection, addDoc, onSnapshot, doc, updateDoc, query } from 'firebase/
 import type { MedicationReminder as MedicationReminderType } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import type { User } from 'firebase/auth';
 
 const reminderSchema = z.object({
   medicineName: z.string().min(1, 'Medicine name is required'),
@@ -35,7 +36,7 @@ export function MedicationReminder() {
   const [reminders, setReminders] = useState<MedicationReminderType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [user, setUser] = useState(auth.currentUser);
+  const [user, setUser] = useState<User | null>(auth.currentUser);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -101,18 +102,21 @@ export function MedicationReminder() {
 
       // Webhook integration
       try {
+        const webhookPayload = {
+            userId: user.uid,
+            medicineName: data.medicineName,
+            dosage: data.dosage,
+            startDate: format(data.startDate, 'yyyy-MM-dd'),
+            endDate: format(data.endDate, 'yyyy-MM-dd'),
+            time: data.time,
+        };
+
         await fetch('https://swapranit.app.n8n.cloud/webhook/medication-data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                medicineName: data.medicineName,
-                dosage: data.dosage,
-                time: data.time,
-                startDate: format(data.startDate, 'yyyy-MM-dd'),
-                endDate: format(data.endDate, 'yyyy-MM-dd'),
-            }),
+            body: JSON.stringify(webhookPayload),
         });
       } catch (webhookError) {
           console.error("Error sending webhook: ", webhookError);
@@ -311,3 +315,5 @@ export function MedicationReminder() {
     </div>
   );
 }
+
+    
