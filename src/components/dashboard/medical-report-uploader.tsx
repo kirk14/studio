@@ -14,7 +14,7 @@ import { analyzeMedicalReport } from '@/ai/flows/medical-report-analysis';
 import { UserContext } from '@/context/user-context';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '../ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '../ui/form';
 
 const reportSchema = z.object({
   bloodPressure: z.string().optional(),
