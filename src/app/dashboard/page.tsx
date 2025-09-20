@@ -2,6 +2,7 @@ import { ProgressStats } from "@/components/dashboard/progress-stats";
 import { ActivityChart } from "@/components/dashboard/activity-chart";
 import { DietPlan } from "@/components/dashboard/diet-plan";
 import { MealAnalyzer } from "@/components/dashboard/meal-analyzer";
+import { HydrationMeter } from "@/components/dashboard/hydration-meter";
 
 export default function DashboardPage() {
   return (
@@ -15,8 +16,9 @@ export default function DashboardPage() {
             </p>
         </div>
 
-        <div className="grid xl:col-span-3 gap-4 md:gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid xl:col-span-3 gap-4 md:gap-8 sm:grid-cols-2 lg:grid-cols-5">
             <ProgressStats />
+            <HydrationMeter />
         </div>
         
         <div className="grid gap-4 md:gap-8 xl:col-span-2">
