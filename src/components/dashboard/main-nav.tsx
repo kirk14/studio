@@ -1,5 +1,6 @@
+
 import Link from "next/link";
-import { Bell, Home, Users, Dumbbell, BookCopy, Pill } from "lucide-react";
+import { Bell, Home, Users, Dumbbell, BookCopy, Pill, User as UserIcon } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +20,16 @@ export function MainNav() {
             <Home className="h-4 w-4" />
             Dashboard
           </Link>
+           <Link
+            href="/dashboard/profile"
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+          >
+            <UserIcon className="h-4 w-4" />
+            Profile
+          </Link>
           <Link
             href="/dashboard/medication"
-            className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
           >
             <Pill className="h-4 w-4" />
             Medication

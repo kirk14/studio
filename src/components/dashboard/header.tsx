@@ -1,13 +1,16 @@
+
+"use client";
+
 import Link from "next/link"
 import {
   Bell,
-  CircleUser,
   Home,
   Menu,
   Users,
   Dumbbell,
   BookCopy,
   Pill,
+  User as UserIcon,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -21,8 +24,26 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Logo } from "@/components/logo"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged, type User } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export function Header() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'U';
+    return name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase();
+  };
+
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
       <Sheet>
@@ -50,6 +71,13 @@ export function Header() {
             >
               <Home className="h-5 w-5" />
               Dashboard
+            </Link>
+            <Link
+                href="/dashboard/profile"
+                className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+            >
+                <UserIcon className="h-5 w-5" />
+                Profile
             </Link>
             <Link
               href="/dashboard/medication"
@@ -92,13 +120,19 @@ export function Header() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="secondary" size="icon" className="rounded-full">
-            <CircleUser className="h-5 w-5" />
+            <Avatar>
+                <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? 'User'} />
+                <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
+            </Avatar>
             <span className="sr-only">Toggle user menu</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/profile">Profile</Link>
+          </DropdownMenuItem>
           <DropdownMenuItem>Settings</DropdownMenuItem>
           <DropdownMenuItem>Support</DropdownMenuItem>
           <DropdownMenuSeparator />
