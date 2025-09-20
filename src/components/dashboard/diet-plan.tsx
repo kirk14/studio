@@ -5,8 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { RecipeCard } from "./recipe-card";
 import { ScrollArea } from "../ui/scroll-area";
 import { generatePersonalizedDietPlan, PersonalizedDietPlanOutput } from "@/ai/flows/personalized-diet-plan-generation";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { Loader2, ServerCrash } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "../ui/alert";
 import { UserContext } from "@/context/user-context";
