@@ -107,12 +107,11 @@ export function MedicationReminder() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                userId: user.uid,
                 medicineName: data.medicineName,
                 dosage: data.dosage,
+                time: data.time,
                 startDate: format(data.startDate, 'yyyy-MM-dd'),
                 endDate: format(data.endDate, 'yyyy-MM-dd'),
-                time: data.time,
             }),
         });
       } catch (webhookError) {
