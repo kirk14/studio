@@ -110,15 +110,18 @@ export function MealAnalyzer() {
 
             // Webhook integration
             try {
-                await fetch('https://sattwik19.app.n8n.cloud/webhook-test/4dfbcdb8-9a48-439a-a97a-d48794c4da21', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        source: 'MealAnalyzer',
-                        ...analysisResult
-                    }),
+                const webhookUrl = new URL('https://sattwik19.app.n8n.cloud/webhook-test/4dfbcdb8-9a48-439a-a97a-d48794c4da21');
+                const params = new URLSearchParams({
+                    source: 'MealAnalyzer',
+                    estimatedCalories: analysisResult.estimatedCalories.toString(),
+                    protein: analysisResult.estimatedMacros.protein.toString(),
+                    carbs: analysisResult.estimatedMacros.carbs.toString(),
+                    fats: analysisResult.estimatedMacros.fats.toString(),
+                });
+                webhookUrl.search = params.toString();
+
+                await fetch(webhookUrl.toString(), {
+                    method: 'GET',
                 });
               } catch (webhookError) {
                   console.error("Error sending webhook: ", webhookError);
